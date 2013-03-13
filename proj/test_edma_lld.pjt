@@ -1,0 +1,59 @@
+; Code Composer Project File, Version 2.0 (do not modify or remove this line)
+
+[Project Settings]
+ProjectDir="D:\tcas_decoder\proj\"
+ProjectType=Executable
+CPUFamily=TMS320C64XX
+Tool="Compiler"
+Tool="CustomBuilder"
+Tool="DspBiosBuilder"
+Tool="Linker"
+Config="Debug"
+Config="Release"
+
+[Source Files]
+Source="..\src\bios_edma3_drv_sample_c642x_cfg.c"
+Source="..\src\c_decode.c"
+Source="..\src\crc.c"
+Source="..\src\decode_dma.c"
+Source="..\src\decode_main.c"
+Source="..\src\edma3_drv.h"
+Source="..\src\edma3_drv_sample_cs.c"
+Source="..\src\edma3_drv_sample_init_i.c"
+Source="..\src\evmc6424Gel.c"
+Source="..\src\fpga_intf.c"
+Source="..\src\init.c"
+Source="..\src\intvecs.asm"
+Source="..\src\isr.c"
+Source="..\src\s_decode.c"
+Source="..\src\utils.c"
+Source="linker.cmd"
+
+["Debug" Settings]
+FinalBuildCmd=copy debug\test_edma_lld.out ..\flashburn\C642x\GNU\AISUtils\test_edma_lld.out
+FinalBuildCmd=start genais.bat
+
+["Compiler" Settings: "Debug"]
+Options=-g -fr"$(Proj_dir)\Debug" -d"_DEBUG" -mv6400+
+
+["Compiler" Settings: "Release"]
+Options=-g -o3 -fr"$(Proj_dir)\Release" -mv6400
+
+["Linker" Settings: "Debug"]
+Options=-a -cr -erst -m".\Debug\test_edma_lld.map" -o".\Debug\test_edma_lld.out" -w -x -i"$(Proj_dir)\..\lib\" -l"edma3_drv_bios.lib" -l"edma3_rm_bios.lib" -l"evm6424bsl.lib"
+
+["Linker" Settings: "Release"]
+Options=-c -m".\Release\test_edma_lld.map" -o".\Release\test_edma_lld.out" -w -x
+
+["..\src\edma3_drv.h" Settings: "Debug"]
+ExcludeFromBuild=true
+
+["..\src\edma3_drv.h" Settings: "Release"]
+ExcludeFromBuild=true
+
+["linker.cmd" Settings: "Debug"]
+LinkOrder=1
+
+["linker.cmd" Settings: "Release"]
+LinkOrder=1
+

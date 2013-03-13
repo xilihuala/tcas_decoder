@@ -1,0 +1,10 @@
+CC:
+  CCERR
+
+
+
+TC:
+¡¤ EDMA3TC detection of an error signaled by the source or destination address.
+¡¤ Attempt to read or write to an invalid address in the configuration memory map.
+¡¤ Detection of a constant addressing mode TR violating the constant addressing mode transfer rules (the
+source/destination addresses and source/destination indexes must be aligned to 32 bytes).

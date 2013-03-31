@@ -224,8 +224,8 @@ void construct_S_report(short *state_ptr)
 int do_frame_check(int pool_id, unsigned long sample_bit_len)
 {
   int i;
-  unsigned long long stm;
-  unsigned long long first_stm;
+  unsigned long stm;
+  unsigned long first_stm;
   char rc;
   char jitter;
   short cur_level;
@@ -233,7 +233,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   long data_idx, state_idx;
   unsigned short datalen;
   char df_code;
-  short *state_ptr;
+  unsigned short *state_ptr;
   unsigned char *sum_data_ptr;
   unsigned char *dlt_data_ptr;
   unsigned char ridx;
@@ -272,7 +272,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   dlt_data_ptr = &sample_data_dlt[pool_id][ridx][0];  
   
   //get first pulse range
-  first_stm = state_ptr[1] & 0x7fff;
+  first_stm = state_ptr[1] & 0x7fff + state_ptr[2];
   
   cur_level = 0;
   data_idx = 0;
@@ -287,9 +287,9 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     if(cnt > MAX_PREAMBLE_NUMBER)
       break; //i can not do more check
     
-    stm = state_ptr[i+1] & 0x7fff;
+    stm = state_ptr[i+1] & 0x7fff + state_ptr[i+2];
     
-    offset = RANGE_TO_DATA_OFFSET(stm-first_stm);
+    offset = RANGE_TO_DATA_OFFSET(stm-first_stm) ;
     
     if((offset + sample_bit_len) > datalen /*MAX_RECV_SIZE*/)
     {
@@ -377,7 +377,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     }
 
   do_next:
-    i += 2;
+    i += 3;
   
   } //while(1) for one possible frame
 

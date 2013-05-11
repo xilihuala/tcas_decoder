@@ -324,10 +324,10 @@ void c_decode(int pool_id)
     f2_gt = (data[1] >> 1) &0x1;
     conf = 1<<15; //bit15 default set to 1, bit0 default set to 0
     bit_value =0;
+    f1_range = data[0];
        
     for(bit=0;bit<14;bit++) //set 14 bit value and confidence, bit0 - F1, bit14 - F2
     {
-      f1_range = data[0];
       bit_pos =f1_range + 29*bit;
       bit_amp = data[4 + bit];
       bit_sum_amp = bit_amp>>8;
@@ -343,7 +343,8 @@ void c_decode(int pool_id)
       {
         unsigned short prev_f2_range;
         unsigned char prev_f2_gt;
-        
+        unsigned short *data;
+
         data = &data_ptr[cframe[k].idx * ONE_C_FRAME_SIZE];
         prev_f2_range = data[0] + 406;
         prev_f2_gt = (data[1]>>1) & 0x1;
@@ -382,9 +383,10 @@ void c_decode(int pool_id)
         {
           unsigned short next_f1_range;
           unsigned char next_f2_gt;
+		  unsigned short *data;
           
           data = &data_ptr[cframe[k].idx * ONE_C_FRAME_SIZE];
-          next_f1_range = data_ptr[0];
+          next_f1_range = data[0];
           next_f2_gt = (data[1]>>1) & 0x1;
           
           //check frame range

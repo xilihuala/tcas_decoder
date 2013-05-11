@@ -25,6 +25,7 @@ so, BYTE0.B0=DB7, BYTE0.B7=DB0 and so on.
 //#define __TEST_SIGNAL
 
 #define __TEST_S_
+#undef  __TEST_S_
 
 extern INLINE_DESC void myprintf(char *format, ...);
 extern INLINE_DESC void dmaprintf(char *format, ...);

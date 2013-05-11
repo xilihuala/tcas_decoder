@@ -16,3 +16,14 @@
 #*.exe
 *.out
 *.app
+
+/proj/cc_build_Debug.log
+/proj/Debug.lkf
+/proj/test_edma_lld.paf2
+/proj/test_edma_lld.sbl
+
+/proj/Debug
+
+/proj/ais
+
+/proj/test_edma_lld.CS_

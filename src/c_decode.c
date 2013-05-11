@@ -184,10 +184,11 @@ void c_decode(int pool_id)
   for(i=0;i<frame_cnt;i++)
   {
     int j;
-	  char ref;
-	  char f1_overlap;
+	char ref;
+	char f1_overlap;
     char spi;
-    
+    char check_ok;
+
     spi = spi_flag[i]; 
     if(spi) //this frame have been set as C2-SPI frame. maybe it is a valid frame, but it relative to the special overlap frame, so we drop it
       continue;

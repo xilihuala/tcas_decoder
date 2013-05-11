@@ -398,7 +398,7 @@ int get_lowc_bitmap(int framelen, \
 
 _ret:
   *number = num;
-  *length = width;
+  *length = span;
   *bitmap = bmap;
   if (span > 24)
   {  

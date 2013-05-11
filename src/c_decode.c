@@ -198,7 +198,7 @@ void c_decode(int pool_id)
     f2_range = f1_range + 406;
     f2_value = data[17];
     f2_gt = (data[1] >> 1) &0x1;
-    
+    check_ok = 1;
     f1_overlap = overlap[i];
     if(f1_overlap)
     {
@@ -236,6 +236,8 @@ void c_decode(int pool_id)
                 && (f2_gt == f2_next_gt))
               {  
                 char pos;
+                
+                check_ok = 0;
                 //check C2-SPI
                 pos = (f1_next_range - f1_range)/29;
                 v = (f1_next_range - f1_range)%29;
@@ -253,6 +255,9 @@ void c_decode(int pool_id)
       } //for
     } //if
     
+    if(check_ok == 0)
+    	continue;
+    	
     //calculate reference value
     data = &data_ptr[i * ONE_C_FRAME_SIZE];
     f1_gt = (data[1] >> 14) & 0x1;

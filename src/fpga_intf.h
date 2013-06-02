@@ -123,7 +123,7 @@ typedef struct event_desc {
 
 #define LEVEL_INT         0
 #define RISE_PULSE_INT    1
-#define DROP_PULSE_INT    1
+#define DROP_PULSE_INT    2
 
 typedef struct gpio_desc {
   char gpioNum;

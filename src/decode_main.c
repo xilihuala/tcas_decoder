@@ -7,6 +7,8 @@
 extern volatile char g_s_sample_full[2];
 extern volatile char g_c_sample_full[2];
 
+unsigned long gSReleaseCnt=0;
+unsigned long gCReleaseCnt=0;
 int app_main();
 
 int main()
@@ -70,7 +72,11 @@ int app_main()
     {
       s_decode(pool_id);
       if(g_s_sample_full[pool_id])
-        release_fpga_buffer(S_MODE, pool_id);
+	  {
+//        release_fpga_buffer(S_MODE, pool_id);
+        g_s_sample_full[pool_id]=0;
+		gSReleaseCnt++;
+      }
     }
      
     //poll C frame
@@ -79,7 +85,11 @@ int app_main()
     {  
       c_decode(pool_id);
       if(g_c_sample_full[pool_id])
-        release_fpga_buffer(C_MODE, pool_id);
-    } 
+	  {
+    //    release_fpga_buffer(C_MODE, pool_id);
+    	g_c_sample_full[pool_id]=0;
+		gCReleaseCnt++;
+	  }
+	} 
   }
 }

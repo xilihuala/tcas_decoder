@@ -158,8 +158,8 @@ INLINE_DESC void init_gpio()
         EVM6424_GPIO_setTrigEdge(gpioNum, 0); //low level trigger : todo
       else if(gpioList[i].int_stype == RISE_PULSE_INT)  
         EVM6424_GPIO_setTrigEdge(gpioNum, 1); //rising edge trigger
-      else if(gpioList[i].int_stype == RISE_PULSE_INT)  
-        EVM6424_GPIO_setTrigEdge(gpioNum, 2); //rising edge trigger
+      else if(gpioList[i].int_stype == DROP_PULSE_INT)  
+        EVM6424_GPIO_setTrigEdge(gpioNum, 2); //drop edge trigger
        
       EVM6424_GPIO_enable_INT(gpioNum);
     }    

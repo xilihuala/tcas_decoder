@@ -9,6 +9,11 @@ extern short cdataSt[MAX_POOL_NUM][MAX_BUF_IN_C_POOL][C_STATE_BUF_SIZE];
 volatile char g_s_sample_full[2];
 volatile char g_c_sample_full[2];
 
+volatile unsigned long gCIntCnt1=0;
+volatile unsigned long gSIntCnt1=0;
+
+
+
 //extern char gFrameOut[MAX_REPORT_FRAME][FRAME_OUT_LEN];
 //extern volatile unsigned long report_wptr[2];
 
@@ -33,7 +38,7 @@ interrupt void buffer1_ready_isr()
 
   //clear int flag
   EVM6424_GPIO_clear_INT(0);
-    
+  gSIntCnt1++;
   //check whether receive buffer is full(todo: when wptr have hole in it, it will product an un-order data)
   wptr = sdata_wptr[0];
   state_ptr = &sdataSt[0][wptr][0];
@@ -169,7 +174,7 @@ interrupt void c_buffer1_ready_isr()
   
   //clear int flag
   EVM6424_GPIO_clear_INT(2);
-    
+  gCIntCnt1++;      
   //check whether receive buffer is full
   wptr = cdata_wptr[0];
   state_ptr = &cdataSt[0][wptr][0];

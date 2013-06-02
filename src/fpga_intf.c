@@ -14,10 +14,10 @@ event_desc_t eventList[]={
 unsigned int EVENT_NUM = sizeof(eventList)/sizeof(event_desc_t);
 
 gpio_desc_t  gpioList[]={
-  { 0, GPIO_INPUT, INT_ENABLE , DROP_PULSE_INT  }, //S buffer1 ready int
-  { 1, GPIO_INPUT, INT_ENABLE , DROP_PULSE_INT  }, //S buffer2 ready int
-  { 2, GPIO_INPUT, INT_ENABLE , DROP_PULSE_INT  }, //C buffer1 ready int
-  { 3, GPIO_INPUT, INT_ENABLE , DROP_PULSE_INT  }  //C buffer2 ready int
+  { 0, GPIO_INPUT, INT_ENABLE , RISE_PULSE_INT  }, //S buffer1 ready int
+  { 1, GPIO_INPUT, INT_ENABLE , RISE_PULSE_INT  }, //S buffer2 ready int
+  { 2, GPIO_INPUT, INT_ENABLE , RISE_PULSE_INT  }, //C buffer1 ready int
+  { 3, GPIO_INPUT, INT_ENABLE , RISE_PULSE_INT  }  //C buffer2 ready int
 //{ 4, GPIO_INPUT, INT_DISABLE, 0               }, //report buffer1 ready int}
 //{ 5, GPIO_INPUT, INT_DISABLE, 0               }  //report buffer2 ready int}
 };
@@ -42,6 +42,10 @@ void report_to_CPU(unsigned char *report)
 {
   static int report_pool_id = 0;
   
+  //debug
+  return;
+
+
   //wait extern DMA finish
   while(1)
   {

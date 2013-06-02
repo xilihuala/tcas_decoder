@@ -7,6 +7,7 @@ typedef struct _c_frame {
   unsigned char sum_ref_value;
   unsigned char dlt_ref_value;
   char ref_oba;
+  char ref_gt;
 } t_c_frame;
 static C_REPORT_T gCFrameReport;
 
@@ -27,6 +28,9 @@ short gConf;
 
 char gSumRef;
 char gDltRef;
+char gGT;
+
+long gReportCnt=0;
 
 void C_decode_init()
 {
@@ -56,19 +60,22 @@ void C_decode_init()
 
 void construct_C_report(unsigned short *data)
 { 
-  char spi;
+/*  char spi;
   char omni;
   char t_b;
   char bs;
-
+*/
+  char bs_sum;
+  char bs_dlt;
 /*  
   if((data[19]>>8) > DATA_THRESHOLD)
     spi = 1;
   else
     spi = 0;
 */
-  spi = 0;
-    
+//  spi = 0;
+
+/*    
   bs = (data[2]>>10) & 0x7;
   if((bs == 4) | (bs == 5))
     omni = 1; //FULL
@@ -79,13 +86,32 @@ void construct_C_report(unsigned short *data)
     t_b = 0;
   else
     t_b = 1;
-    
+*/
+  bs_sum = data[3]>>13;    
+  if((bs_sum == 0) || (bs_sum == 1)) //bs_sum is 0 or 180
+  {  
+    if(gGT == 0)
+      bs_dlt = 3; //270
+    else
+      bs_dlt = 2; //90
+  }
+  else if((bs_sum == 2) || (bs_sum == 3)) //bs_sum is 90 or 270
+  {  
+    if(gGT == 0)
+      bs_dlt = 1; //180
+    else
+      bs_dlt = 0; //0
+  }
+
   gCFrameReport.range       = data[0];
-  gCFrameReport.param0      = data[2] | (t_b<<9) | (omni<<8) | (spi<<7) ;
-  gCFrameReport.param1      = data[3];
+  gCFrameReport.param0      = data[2] /*| (t_b<<9) | (omni<<8) | (spi<<7) */;
+  gCFrameReport.param1      = data[3] & ~(0x7<<10) | ((bs_dlt&0x7) << 10);
   gCFrameReport.param2      = ((gSumRef&0xff)<<8) | (gDltRef&0xff);
   gCFrameReport.code        = gBitValue<<1;
   gCFrameReport.confidence  = gConf<<1;
+
+  //debug
+  gReportCnt++;
 }
 
 int C_select_recv()
@@ -285,10 +311,17 @@ void c_decode(int pool_id)
     
     cframe[v_cnt].sum_ref_value = sum_ref /ref_cnt;
     cframe[v_cnt].dlt_ref_value = dlt_ref /ref_cnt;
+
     if(ref == 0) //USE F1
+	{
       cframe[v_cnt].ref_oba = GET_OBA(data[4] >>8,data[4] & 0xff);
+	  cframe[v_cnt].ref_gt = f1_gt;
+    }
     else //USE F2
+	{
       cframe[v_cnt].ref_oba = GET_OBA(data[17] >>8, data[17] & 0xff);
+      cframe[v_cnt].ref_gt = f2_gt;
+    }
     cframe[v_cnt].idx = i;  
     
     v_cnt ++;  
@@ -321,8 +354,9 @@ void c_decode(int pool_id)
     dlt_ref = cframe[i].dlt_ref_value;
     ref_oba = cframe[i].ref_oba;
     mode = data[2]>>13;
+	f1_gt = (data[1] >> 14) & 0x1;
     f2_gt = (data[1] >> 1) &0x1;
-    conf = 1<<15; //bit15 default set to 1, bit0 default set to 0
+    conf = 0; 
     bit_value =0;
     f1_range = data[0];
        
@@ -426,8 +460,8 @@ void c_decode(int pool_id)
         
       if(bit_sum_amp < DATA_THRESHOLD) //H0 (exception monopulse H1 will result L0)
       {
-        if(!((my_oba_relative == 1) && (other_oba_relative == 0))) //H0
-          conf |= 1<<(13-bit);
+	   // if(!((my_oba_relative == 1) && (other_oba_relative == 0))) //H0
+        conf |= 1<<(13-bit);
       }
       else //H1, L1£¬L0
       {
@@ -457,10 +491,11 @@ void c_decode(int pool_id)
     //todo: maybe set spi value and confidence??? howto do it???
       
     //send C REPORT
-    gConf = conf;
+    gConf = (conf<<1) | (1<<15);//bit15 default set to 1, bit0 default set to 0;
     gBitValue = bit_value;
     gSumRef = sum_ref;
     gDltRef = dlt_ref;
+    gGT = cframe[i].ref_gt; 
     construct_C_report(data);
     report_to_CPU((unsigned char *)&gCFrameReport);
   }

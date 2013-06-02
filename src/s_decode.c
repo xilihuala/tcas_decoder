@@ -115,6 +115,7 @@ int check_dlt_ref_direction(unsigned char *sample_dlt);
 int check_sum_ref_direction(unsigned char *sample_sum);
 void get_ref_pulse(short *state);
 
+long gSReportCnt=0;
 
 #define RANGE_TO_DATA_OFFSET(range)  ((range+1)/2)
 
@@ -171,16 +172,16 @@ void construct_S_report(short *state_ptr)
       if((bs_sum == 0) || (bs_sum == 1)) //bs_sum is 0 or 180
       {  
         if(gGT == 0)
-          bs_dlt = 1; //180
+          bs_dlt = 3; //270
         else
-          bs_dlt = 0; //0
+          bs_dlt = 2; //90
       }
       else if((bs_sum == 2) || (bs_sum == 3)) //bs_sum is 90 or 270
       {  
         if(gGT == 0)
-          bs_dlt = 3; //270
+		  bs_dlt = 1; //180
         else
-          bs_dlt = 2; //90
+          bs_dlt = 0; //0
       }
       omni = 0; //direct
       t_b = UP_DIRECTION; //up
@@ -220,6 +221,7 @@ void construct_S_report(short *state_ptr)
                                               
   gSFrameReport.param2 = (ref_level<<8) \
                         | ref_level_dlt;
+
 }
 
 int do_frame_check(int pool_id, unsigned long sample_bit_len)
@@ -234,7 +236,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   long data_idx, state_idx;
   unsigned short datalen;
   char df_code;
-  unsigned short *state_ptr;
+  short *state_ptr;
   unsigned char *sum_data_ptr;
   unsigned char *dlt_data_ptr;
   unsigned char ridx;
@@ -479,6 +481,8 @@ void s_decode(int pool_id)
   ridx = sdata_rptr[pool_id];
   state_ptr = &sdataSt[pool_id][ridx][0];
 
+    //DEBUG
+  gSReportCnt ++;
 	//only use frame0's state to determin current mode
   mode = state_ptr[0] &0x7;
   

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "tcas.h"
 
-#define PRINT_DEBUG
+/*#define PRINT_DEBUG*/
 
 unsigned char _diff(unsigned char a, unsigned char b)
 {

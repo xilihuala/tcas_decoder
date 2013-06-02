@@ -184,12 +184,12 @@ void c_decode(int pool_id)
   char f1_gt, f2_gt, f2_next_gt;
   unsigned char ref_cnt;
   unsigned char mode;
-  
+   
   ridx = cdata_rptr[pool_id];
   state_ptr = &cdataSt[pool_id][ridx][0];
   if((*state_ptr) == 0) //no frame in this buffer , goto next
     goto _c_do_next;
-    
+  
   frame_cnt = (*state_ptr)/ONE_C_FRAME_SIZE;
   if(frame_cnt == 0)
     return;
@@ -327,7 +327,7 @@ void c_decode(int pool_id)
     v_cnt ++;  
   } //for
   
-  
+   
   /******************************************/
   /*  STEP 2:                               */
   /*    1) set bit value and confidence     */
@@ -489,7 +489,7 @@ void c_decode(int pool_id)
     } //set bit value end
     
     //todo: maybe set spi value and confidence??? howto do it???
-      
+
     //send C REPORT
     gConf = (conf<<1) | (1<<15);//bit15 default set to 1, bit0 default set to 0;
     gBitValue = bit_value;

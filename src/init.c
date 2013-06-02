@@ -141,6 +141,8 @@ INLINE_DESC void init_gpio()
   
  /*init GPIO for test*/
   EVM6424_GPIO_init();
+
+  EVM6424_GPIO_ClearAllTrigEdge();
   
   for(i=0;i<GPIO_NUM;i++)
   {

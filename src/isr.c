@@ -11,7 +11,9 @@ volatile char g_c_sample_full[2];
 
 volatile unsigned long gCIntCnt1=0;
 volatile unsigned long gSIntCnt1=0;
-
+volatile unsigned long gSIntCnt11=0;
+volatile unsigned long gSIntLost1=0;
+volatile unsigned long gSIntCnt111=0;
 
 
 //extern char gFrameOut[MAX_REPORT_FRAME][FRAME_OUT_LEN];
@@ -39,22 +41,28 @@ interrupt void buffer1_ready_isr()
   //clear int flag
   EVM6424_GPIO_clear_INT(0);
   gSIntCnt1++;
+
   //check whether receive buffer is full(todo: when wptr have hole in it, it will product an un-order data)
   wptr = sdata_wptr[0];
   state_ptr = &sdataSt[0][wptr][0];
   if(state_ptr[DATA_LEN_POS]) //sample data buffer full
   {
     g_s_sample_full[0] = 1;
+	gSIntLost1++;
     return;
   }
 	
   //data length is number of words
   datalen = *(volatile unsigned short*)FPGA_DATA1_LEN_ADDR;
   if(datalen == 0xffffu)
+  {
     datalen = 2;
-  else if((datalen < 1200) || (datalen >3600))
+	gSIntCnt11++;
+  }
+  else if((datalen < 640) || (datalen >3600))
   {
     myprintf("state1_complet_isr: datalen error (%u)\n",datalen);
+    gSIntCnt111++;
     goto clear_buffer1;
   }
   
@@ -116,7 +124,7 @@ interrupt void buffer2_ready_isr()
 
   if(datalen == 0xffffu)
     datalen = 2;
-  else if((datalen < 1200) || (datalen >3600))
+  else if((datalen < 640) || (datalen >3600))
   {
     myprintf("state2_complet_isr: datalen error (%u)\n",datalen);
     goto clear_buffer2;
@@ -175,14 +183,15 @@ interrupt void c_buffer1_ready_isr()
   //clear int flag
   EVM6424_GPIO_clear_INT(2);
   gCIntCnt1++;      
+
   //check whether receive buffer is full
   wptr = cdata_wptr[0];
   state_ptr = &cdataSt[0][wptr][0];
   if(state_ptr[C_DATA_LEN_POS]) //sample data buffer full
- {
+  {
     g_c_sample_full[0] = 1;
     return;
-	}
+  }
 	
   //data length is number of words
   datalen = *(volatile unsigned short*)FPGA_C_DATA1_LEN_ADDR;
@@ -192,7 +201,7 @@ interrupt void c_buffer1_ready_isr()
    	myprintf("state2_complet_isr: datalen error (%u)\n",datalen);
     goto clear_buffer3;
   }
-      
+  
   //get data
   rc = retrieve_sample_data(C_MODE, 0, datalen); // poolid, datalen
   if(rc)
@@ -209,8 +218,7 @@ interrupt void c_buffer1_ready_isr()
     cdata_wptr[0] = 0;
   else
     cdata_wptr[0] = wptr;
-  
-    
+      
   return;
   //todo :maybe check event-miss in EMCR/EMCRH, use this to indicate data-miss
 

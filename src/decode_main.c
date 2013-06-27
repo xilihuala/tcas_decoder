@@ -27,14 +27,14 @@ int app_main()
 {
   int rc;
   int pool_id;
-
+  int i;
 //  myprintf("app main start\n");
     
   //only for flash boot debug
   #ifdef __TIME_TEST
   while(0)
   {
-    int i;
+
     EVM6424_GPIO_setOutput(100, 0);
     for(i=0;i<5000;i++);
     EVM6424_GPIO_setOutput(100, 1);
@@ -60,6 +60,12 @@ int app_main()
 
   //init fpga
   init_fpga();
+
+  for(i=0;i<2;i++)
+  {
+    g_s_sample_full[i] = 0;
+    g_c_sample_full[i] = 0;
+  }
 
   init_isr();
 

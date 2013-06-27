@@ -102,7 +102,7 @@ clear_buffer1:
 //this is buffer2 ready interrupt process
 interrupt void buffer2_ready_isr()
 {
-  unsigned short datalen;
+  volatile unsigned short datalen;
   unsigned char wptr;
   int rc;
   short *state_ptr;
@@ -175,7 +175,7 @@ void sample_data2_complete_isr()
 //this is C buffer1 ready interrupt process
 interrupt void c_buffer1_ready_isr()
 {
-  unsigned short datalen;
+  volatile unsigned short datalen;
   unsigned char wptr;
   int rc;
   short *state_ptr;
@@ -230,7 +230,7 @@ clear_buffer3:
 //this is C buffer2 ready interrupt process
 interrupt void c_buffer2_ready_isr()
 {
-  unsigned short datalen;
+  volatile unsigned short datalen;
   unsigned char wptr;
   int rc;
   short *state_ptr;

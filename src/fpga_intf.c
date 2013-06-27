@@ -43,13 +43,13 @@ void report_to_CPU(unsigned char *report)
   static int report_pool_id = 0;
   
   //debug
-  return;
+  //return;
 
 
   //wait extern DMA finish
   while(1)
   {
-    char state;
+    volatile char state;
   
   	state = (*(volatile unsigned char*)FPGA_REPORT_STATE)&0x1;
   	if((state & (1<< report_pool_id)) == 0)

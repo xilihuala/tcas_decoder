@@ -27,7 +27,13 @@ static void data_callback (unsigned int tcc, EDMA3_RM_TccStatus status,
       sample_data1_complete_isr();
     else if(tcc == EVENT_DATA_STATE2)
       sample_data2_complete_isr();
+	else if(tcc == EVENT_C_DATA_STATE1)
+      c_sample_data1_complete_isr();
+    else if(tcc == EVENT_C_DATA_STATE2)
+      c_sample_data2_complete_isr();
+    
     break;
+
   case EDMA3_RM_E_CC_DMA_EVT_MISS:
     /* Transfer resulted in DMA event miss error. */
     break;
@@ -114,7 +120,7 @@ int create_channel(unsigned int acnt,
     return -1;
   }
 
-  if((event == EVENT_DATA_STATE1) || (event == EVENT_DATA_STATE2))
+  if((event == EVENT_DATA_STATE1) || (event == EVENT_DATA_STATE2) || (event == EVENT_C_DATA_STATE1) || (event == EVENT_C_DATA_STATE2))
     callback = data_callback;    
   else if((event == EVENT_REPORT1) ||(event == EVENT_REPORT2))
     callback = NULL/*report_callback*/;  

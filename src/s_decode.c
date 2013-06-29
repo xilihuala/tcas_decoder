@@ -21,11 +21,11 @@ so, BYTE0.B0=DB7, BYTE0.B7=DB0 and so on.
 
 //only for test
 #define __TIME_TEST
-#undef __TIME_TEST
+//#undef __TIME_TEST
 //#define __TEST_SIGNAL
 
 #define __TEST_S_
-#undef  __TEST_S_
+//#undef  __TEST_S_
 
 extern INLINE_DESC void myprintf(char *format, ...);
 extern INLINE_DESC void dmaprintf(char *format, ...);
@@ -117,6 +117,8 @@ void get_ref_pulse(short *state);
 
 long gSReportCnt=0;
 
+extern volatile char g_s_sample_full[MAX_POOL_NUM];
+
 #define RANGE_TO_DATA_OFFSET(range)  ((range+1)/2)
 
 void S_decode_init()
@@ -131,15 +133,16 @@ void S_decode_init()
   {
     sdata_wptr[i] = 0;
   	sdata_rptr[i] = 0;
+	g_s_sample_full[i] = 0;
   }
-  
+
   gSFrameReport.head_delimit = 0x55aa;
   gSFrameReport.tail_delimit = 0xaa55;
 }
 
 void construct_S_report(short *state_ptr)
 {
-  short range;
+  long range;
   char mode;
   char t_b;
   char aq_bs;
@@ -150,12 +153,12 @@ void construct_S_report(short *state_ptr)
   char omni;
   
   
-  range = state_ptr[1] & 0x7fff; //ST0[14:0]
+  range = state_ptr[2]; //ST0[15:0]
   
   //param0 , param1
-  mode  = state_ptr[0] & 0x7;    //ST1[2:0]
-  if(mode == 0x1) // aquiry mode
-  	aq_bs = (state_ptr[0] >>8)&0x7;//ST1[10:8]
+  mode  = state_ptr[0] & 0x7;    //ST2[2:0]
+  if(mode == ACQUIRE_MODE) // aquiry mode
+  	aq_bs = (state_ptr[0] >>8)&0x7;//ST2[10:8]
   else
     aq_bs = 0x7; // invalid direction
 
@@ -207,6 +210,10 @@ void construct_S_report(short *state_ptr)
   pat = 0;     //todo
   at  = 0;     //todo
   
+  gSFrameReport.param0 = 0;
+  gSFrameReport.param1 = 0;
+  gSFrameReport.param2 = 0;
+
   //set report
   gSFrameReport.range = range;
   gSFrameReport.param0 |=  ((mode&0x7)<<13) \
@@ -220,8 +227,17 @@ void construct_S_report(short *state_ptr)
                         | (at&0x1f);
                                               
   gSFrameReport.param2 = (ref_level<<8) \
-                        | ref_level_dlt;
+                        | ((ref_level_dlt<<1)&0xff);
 
+}
+
+//todo: use aa55 as tail flag
+int check_tail(short st)
+{
+  if((st & 0xff00u) != 0xff00u)
+    return 1; 
+  else
+    return 0;
 }
 
 int do_frame_check(int pool_id, unsigned long sample_bit_len)
@@ -268,8 +284,8 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   
   for(i=0;i<datalen;i++)
   {
-    sample_data[pool_id][ridx][i] = s_sample_data[pool_id][ridx][i]>>8;
-    sample_data_dlt[pool_id][ridx][i] = s_sample_data[pool_id][ridx][i] &0xff;
+    sample_data_dlt[pool_id][ridx][i] = s_sample_data[pool_id][ridx][i]>>8;
+    sample_data[pool_id][ridx][i] = s_sample_data[pool_id][ridx][i] &0xff;
   }
   sum_data_ptr = &sample_data[pool_id][ridx][0];  
   dlt_data_ptr = &sample_data_dlt[pool_id][ridx][0];  
@@ -284,7 +300,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   cnt = 0;
   
   //check for every possible preamble
-  while((state_ptr[i] & 0xff00u) != 0xff00u)
+  while(check_tail(state_ptr[i]))
   {
     cnt ++;
     if(cnt > MAX_PREAMBLE_NUMBER)
@@ -294,7 +310,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     
     offset = RANGE_TO_DATA_OFFSET(stm-first_stm) ;
     
-    if((offset + sample_bit_len) > datalen /*MAX_RECV_SIZE*/)
+    if((offset + sample_bit_len + 8*S_SAMPLE_FREQ) > datalen /*MAX_RECV_SIZE*/)
     {
       myprintf("end of buffer at %u\n", ((unsigned int)i)/2);
       break; //todo: need frame's range is in-order
@@ -372,7 +388,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     }
 
     //retrigger, determine which one is the current frame
-    if(ref_level > (DB3*cur_level))
+    if((ref_level - cur_level) > 3*VALUE_DB1)
     {
       cur_level = ref_level;
       data_idx = offset;
@@ -408,15 +424,18 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   mode = state_ptr[state_idx] & 0x7;
 
 #ifndef __TEST_S_  
-  if(mode == ACQUIRE_MODE) //acquire mode
-    addr = (state_ptr[i]&0xff)<<16 | state_ptr[i+1];
+  if((mode == ACQUIRE_MODE) || (mode == CORDNATE_MODE)) //acquire mode
+    addr = (state_ptr[i]&0xff)<<16 | state_ptr[i+1]; //TODO: USE 4061-4062
   else
     addr = 0; //todo: none-acquire mode need CRC or not, or something(exp. DF11 and DF17 need do CRC)?????  
 #else
     addr = 0; //DF17
 #endif
-    
-  rc = errCheck(&gSFrameReport, addr);
+
+  df_code =  gSFrameReport.frame[0] >> 3;  
+  rc = 0;
+  if((df_code != 4) && (mode != BROADCAST_MODE))
+    rc = errCheck(&gSFrameReport, addr);
   if(rc)
   {
     myprintf("crc check failed! (%u)\n", pool_id);
@@ -424,7 +443,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   }
   
   //filter out NON-TACS frame, ONLY REPORT DF0 DF4 DF11 DF16 DF17
-  df_code =  gSFrameReport.frame[0] >> 3;
+  
   if((df_code != 0) && (df_code != 4) && (df_code != 11) && (df_code != 16) && (df_code != 17))
     return -2;  //no need send this frame to CPU
   
@@ -481,15 +500,15 @@ void s_decode(int pool_id)
   ridx = sdata_rptr[pool_id];
   state_ptr = &sdataSt[pool_id][ridx][0];
 
-    //DEBUG
-  gSReportCnt ++;
-	//only use frame0's state to determin current mode
+  //only use frame0's state to determin current mode
   mode = state_ptr[0] &0x7;
   
   //check frame 
 #ifndef __TEST_S_  
   if(mode == ACQUIRE_MODE) //acquire mode
     idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
+  else if((mode == CORDNATE_MODE) || (mode == BROADCAST_MODE))
+    idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
   else
   {
     idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
@@ -506,11 +525,13 @@ void s_decode(int pool_id)
     if(idx == MAX_PREAMBLE_NUMBER)
     {
       send_END_to_CPU(mode);
+      gSReportCnt ++;
     }  
     else
     {
       construct_S_report(&state_ptr[idx]);
       report_to_CPU((unsigned char *)&gSFrameReport);
+      gSReportCnt ++;
     }  
   }
   
@@ -643,14 +664,14 @@ void cal_refer_level(unsigned char *sample_sum, unsigned char *sample_dlt)
   for(i=0; i<ref_cnt; i++)
   {
     v_sum = sample_sum[ref_idx[i]];
-    v_dlt = sample_dlt[ref_idx[i]]&0x7;
+    v_dlt = sample_dlt[ref_idx[i]]&0x7f;
     refnum[i] = 0;
     
     for(j=0; j<ref_cnt; j++)
     {
       if(i == j)
         continue;
-      if(_abs_diff(sample_sum[ref_idx[j]], v_sum) <= DB2*VALUE_DB1)// within 2db
+      if(_abs_diff(sample_sum[ref_idx[j]], v_sum) <= 2*VALUE_DB1)// within 2db
        refnum[i] ++;
     }
     
@@ -698,7 +719,7 @@ void cal_refer_level(unsigned char *sample_sum, unsigned char *sample_dlt)
     v_sum = refmax_sum[i];
     v_dlt = refmax_dlt[i];
   
-    if(_diff(v_sum,refmin) <= DB2*VALUE_DB1) //WITHIN 2db
+    if(_diff(v_sum,refmin) <= 2*VALUE_DB1) //WITHIN 2db
     {
       mincnt++;
       level_sum += v_sum;
@@ -739,7 +760,7 @@ char overlap_frame_check(unsigned char *sample)
   if(maxval < v)
     maxval = v;
   
-  if(minval >= DB3*maxval)
+  if((minval - maxval) > 3*VALUE_DB1)
     return 1;
   
   /*3.5us check:  min(T=3.5, 4.5, 7.0) compare to max(T=0, 1.0)*/
@@ -758,7 +779,7 @@ char overlap_frame_check(unsigned char *sample)
   if(maxval < v)
     maxval = v;
   
-  if(minval >= DB3*maxval)
+  if((minval - maxval)> 3*VALUE_DB1)
     return 1;
   
   /*4.5us check: min(T= 4.5, 5.5, 8.0, 9.0) compare to max(T = 0, 1.0, and 3.5)*/
@@ -788,7 +809,7 @@ char overlap_frame_check(unsigned char *sample)
     maxval = v;
   
   //COMPARE
-  if(minval >= DB3*maxval)
+  if((minval - maxval) > 3*VALUE_DB1)
     return 1;
 
   return 0;
@@ -802,83 +823,32 @@ int consistent_power_test(unsigned char *sample)
 {
   char cnt=0;
   unsigned long v;
-
-#if 0
-  int i;
-  //check 0us
-  v = sample[0];
-  for(i=0;i<5;i++)
-  {
-    if( (v > ref_level*DB3) || (v*DB3 < ref_level))
-      break;
-  }
-  if(i == 5)
-    cnt ++;
-    
-  //check 1us
-  v = sample[10];
-  for(i=0;i<5;i++)
-  {
-    if( (v > ref_level*DB3) || (v*DB3 < ref_level))
-      break;
-  }
-  if(i == 5)
-    cnt ++;
-  
-  //check 3.5us
-  v = sample[35];
-  for(i=0;i<5;i++)
-  {
-    if( (v > ref_level*DB3) || (v*DB3 < ref_level))
-      break;
-  }
-  if(i == 5)
-    cnt ++;
-  
-  //check 4.5us
-  v = sample[45];
-  for(i=0;i<5;i++)
-  {
-    if( (v > ref_level*DB3) || (v*DB3 < ref_level))
-      break;
-  }
-  if(i == 5)
-    cnt ++;
-  
-  if(cnt <= 2)
-    return 1;
-  
-  return 0;
-#else
 //todo : average in all samples when sample freq changes
 
   //check 0us
   v = (sample[0]+sample[1]+sample[2]+sample[3]+sample[4])/5;
-  if(_abs_diff(v, ref_level) > DB3*VALUE_DB1)
+  if(_abs_diff(v, ref_level) < 3*VALUE_DB1)
     cnt ++;
     
   //check 1us
   v = (sample[10+gJit]+sample[11+gJit]+sample[12+gJit]+sample[13+gJit]+sample[14+gJit])/5;
-  if(_abs_diff(v, ref_level) > DB3*VALUE_DB1)
+  if(_abs_diff(v, ref_level) < 3*VALUE_DB1)
     cnt ++;
   
   //check 3.5us
   v = (sample[35+gJit]+sample[36+gJit]+sample[37+gJit]+sample[38+gJit]+sample[39+gJit])/5;
-  if(_abs_diff(v, ref_level) > DB3*VALUE_DB1)
+  if(_abs_diff(v, ref_level) < 3*VALUE_DB1)
     cnt ++;
   
   //check 4.5us
   v = (sample[45+gJit]+sample[46+gJit]+sample[47+gJit]+sample[48+gJit]+sample[49+gJit])/5;
-  if(_abs_diff(v, ref_level) > DB3*VALUE_DB1)
+  if(_abs_diff(v, ref_level) < 3*VALUE_DB1)
     cnt ++;
   
   if(cnt <= 2)
     return 1;
   
   return 0;
-
-#endif
-
 }
 
 /*check first five data power level*/
@@ -911,7 +881,7 @@ int df_valid(unsigned char *sample)
       if((s2>DATA_THRESHOLD) && (s3>DATA_THRESHOLD) && (s4>DATA_THRESHOLD) && (s5>DATA_THRESHOLD)) //check 0
       {
         maxpluse = getMax4(s2,s3,s4,s5);
-        if ((maxpluse< ref_level) && ((ref_level- maxpluse) > DB6*VALUE_DB1))
+        if ((maxpluse< ref_level) && ((ref_level- maxpluse) > 6*VALUE_DB1))
           return 1; //todo : maybe check +1 and -1???
         break;
       }
@@ -925,7 +895,7 @@ int df_valid(unsigned char *sample)
           if((s1>DATA_THRESHOLD) && (s2>DATA_THRESHOLD) && (s3>DATA_THRESHOLD) && (s4>DATA_THRESHOLD)) //check -1
           {
             maxpluse = getMax4(s1,s2,s3,s4);
-            if ((maxpluse< ref_level) && ((ref_level- maxpluse) > DB6*VALUE_DB1))
+            if ((maxpluse< ref_level) && ((ref_level- maxpluse) > 6*VALUE_DB1))
               return 1;
             break;
           }
@@ -937,7 +907,7 @@ int df_valid(unsigned char *sample)
             if((s3>DATA_THRESHOLD) && (s4>DATA_THRESHOLD) && (s5>DATA_THRESHOLD) && (s6>DATA_THRESHOLD)) //check +1
             {
               maxpluse = getMax4(s3,s4,s5,s6);
-              if ((maxpluse< ref_level) && ((ref_level- maxpluse) > DB6*VALUE_DB1))
+              if ((maxpluse< ref_level) && ((ref_level- maxpluse) > 6*VALUE_DB1))
                 return 1;
               break;
             }
@@ -1014,64 +984,64 @@ void multi_sample_baseline(unsigned char *sample, unsigned short level, unsigned
     
 	//CHIP 1
     p = sample[0+k];
-    if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+    if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _1ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _1ChipTypeB ++;
        
     p = sample[1+k];
-    if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+    if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _1ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _1ChipTypeB ++;
          
     p = sample[2+k];
-	  if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+	  if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _1ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _1ChipTypeB ++;
         
     p = sample[3+k];
-	  if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+	  if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _1ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _1ChipTypeB ++;
         
     p = sample[4+k];
-	  if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+	  if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _1ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _1ChipTypeB ++;
     
     //CHIP 0  
     p = sample[5+k];
-    if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+    if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _0ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _0ChipTypeB ++;
       
     p = sample[6+k];
-	  if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+	  if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _0ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _0ChipTypeB ++;
       
     p = sample[7+k];
-	  if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+	  if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _0ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _0ChipTypeB ++;
       
     p = sample[8+k];
-	  if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+	  if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _0ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _0ChipTypeB ++;
       
     p = sample[9+k];
-	  if(_abs_diff(p, level) <= DB3*VALUE_DB1)
+	  if(_abs_diff(p, level) <= 3*VALUE_DB1)
       _0ChipTypeA ++;
-    else if(_diff(level,p) > DB6*VALUE_DB1) //type B
+    else if(_diff(level,p) > 6*VALUE_DB1) //type B
       _0ChipTypeB ++;
       
     _1Score = _1ChipTypeA - _0ChipTypeA + _0ChipTypeB - _1ChipTypeB;

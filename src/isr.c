@@ -6,14 +6,40 @@ extern short sdataSt[MAX_POOL_NUM][MAX_BUF_IN_S_POOL][S_STATE_BUF_SIZE];
 extern volatile unsigned char cdata_wptr[MAX_POOL_NUM]; //write pointer for sample_data
 extern short cdataSt[MAX_POOL_NUM][MAX_BUF_IN_C_POOL][C_STATE_BUF_SIZE];
 
-volatile char g_s_sample_full[2];
-volatile char g_c_sample_full[2];
+volatile char g_s_sample_full[MAX_POOL_NUM];
+volatile char g_c_sample_full[MAX_POOL_NUM];
 
+#define _DEBUG_INT_
+//#undef  _DEBUG_INT_
+
+#ifdef _DEBUG_INT_
+//fpga interrupt count
 volatile unsigned long gCIntCnt1=0;
+volatile unsigned long gCIntCnt2=0;
 volatile unsigned long gSIntCnt1=0;
-volatile unsigned long gSIntCnt11=0;
-volatile unsigned long gSIntLost1=0;
-volatile unsigned long gSIntCnt111=0;
+volatile unsigned long gSIntCnt2=0;
+
+//data length error count
+volatile unsigned long gCLenErrCnt1=0;
+volatile unsigned long gCLenErrCnt2=0;
+volatile unsigned long gSLenErrCnt1=0;
+volatile unsigned long gSLenErrCnt2=0;
+
+//dma error count
+volatile unsigned long gCDmaErrCnt1=0;
+volatile unsigned long gCDmaErrCnt2=0;
+volatile unsigned long gSDmaErrCnt1=0;
+volatile unsigned long gSDmaErrCnt2=0;
+
+//dma interrupt count
+volatile unsigned long gCDMAIntCnt1=0;
+volatile unsigned long gCDMAIntCnt2=0;
+volatile unsigned long gSDMAIntCnt1=0;
+volatile unsigned long gSDMAIntCnt2=0;
+
+//int lost because buffer full
+volatile unsigned long gSIntFull1=0;
+#endif
 
 
 //extern char gFrameOut[MAX_REPORT_FRAME][FRAME_OUT_LEN];
@@ -40,7 +66,9 @@ interrupt void buffer1_ready_isr()
 
   //clear int flag
   EVM6424_GPIO_clear_INT(0);
+#ifdef _DEBUG_INT_
   gSIntCnt1++;
+#endif
 
   //check whether receive buffer is full(todo: when wptr have hole in it, it will product an un-order data)
   wptr = sdata_wptr[0];
@@ -48,7 +76,9 @@ interrupt void buffer1_ready_isr()
   if(state_ptr[DATA_LEN_POS]) //sample data buffer full
   {
     g_s_sample_full[0] = 1;
-	gSIntLost1++;
+  #ifdef _DEBUG_INT_
+	gSIntFull1++;
+  #endif
     return;
   }
 	
@@ -57,12 +87,13 @@ interrupt void buffer1_ready_isr()
   if(datalen == 0xffffu)
   {
     datalen = 2;
-	gSIntCnt11++;
   }
   else if((datalen < 640) || (datalen >3600))
   {
     myprintf("state1_complet_isr: datalen error (%u)\n",datalen);
-    gSIntCnt111++;
+#ifdef _DEBUG_INT_
+    gSLenErrCnt1++;
+  #endif
     goto clear_buffer1;
   }
   
@@ -87,6 +118,10 @@ interrupt void buffer1_ready_isr()
   //todo :maybe check event-miss in EMCR/EMCRH, use this to indicate data-miss
 
 clear_buffer1:
+  #ifdef _DEGUG_INT_
+    gSDmaErrCnt1++;
+  #endif
+
 	release_fpga_buffer(S_MODE, 0);
 
 #if 0
@@ -109,7 +144,10 @@ interrupt void buffer2_ready_isr()
   
 	//clear int flag
   EVM6424_GPIO_clear_INT(1);
-  
+#ifdef _DEBUG_INT_
+  gSIntCnt2++;
+#endif
+
   //check receive buffer full
   wptr = sdata_wptr[1];
   state_ptr = &sdataSt[1][wptr][0];
@@ -126,6 +164,9 @@ interrupt void buffer2_ready_isr()
     datalen = 2;
   else if((datalen < 640) || (datalen >3600))
   {
+  #ifdef _DEBUG_INT_
+    gSLenErrCnt2++;
+  #endif
     myprintf("state2_complet_isr: datalen error (%u)\n",datalen);
     goto clear_buffer2;
   }
@@ -151,6 +192,10 @@ interrupt void buffer2_ready_isr()
 	return;
 
 clear_buffer2:
+  #ifdef _DEGUG_INT_
+    gSDmaErrCnt2++;
+  #endif
+
   release_fpga_buffer(S_MODE, 1);
 }
 
@@ -158,6 +203,10 @@ clear_buffer2:
 //this is sample data 1 transfer complete interrupt process
 void sample_data1_complete_isr()
 {
+#ifdef _DEBUG_INT_
+  gSDMAIntCnt1++;
+#endif
+
   release_fpga_buffer(S_MODE, 0);
 }
 
@@ -165,6 +214,10 @@ void sample_data1_complete_isr()
 //this is sample data 2 transfer complete interrupt process
 void sample_data2_complete_isr()
 {
+#ifdef _DEBUG_INT_
+  gSDMAIntCnt2++;
+#endif
+
   release_fpga_buffer(S_MODE, 1);
 }
 
@@ -179,10 +232,13 @@ interrupt void c_buffer1_ready_isr()
   unsigned char wptr;
   int rc;
   short *state_ptr;
-  
+  int i;
+
   //clear int flag
   EVM6424_GPIO_clear_INT(2);
+#ifdef _DEBUG_INT_
   gCIntCnt1++;      
+#endif
 
   //check whether receive buffer is full
   wptr = cdata_wptr[0];
@@ -194,11 +250,15 @@ interrupt void c_buffer1_ready_isr()
   }
 	
   //data length is number of words
+  for(i=0;i<2;i++)
   datalen = *(volatile unsigned short*)FPGA_C_DATA1_LEN_ADDR;
   
   if((datalen < ONE_C_FRAME_SIZE) || (datalen >3600))
   {
    	myprintf("state2_complet_isr: datalen error (%u)\n",datalen);
+#ifdef _DEBUG_INT_
+	gCLenErrCnt1++;
+#endif
     goto clear_buffer3;
   }
   
@@ -223,6 +283,10 @@ interrupt void c_buffer1_ready_isr()
   //todo :maybe check event-miss in EMCR/EMCRH, use this to indicate data-miss
 
 clear_buffer3:
+  #ifdef _DEGUG_INT_
+    gCDmaErrCnt1++;
+  #endif
+
   release_fpga_buffer(C_MODE, 0);
 }
 
@@ -234,10 +298,14 @@ interrupt void c_buffer2_ready_isr()
   unsigned char wptr;
   int rc;
   short *state_ptr;
-  
+  int i;
+    
   //clear int flag
   EVM6424_GPIO_clear_INT(3);
-    
+#ifdef _DEBUG_INT_
+  gCIntCnt2++;    
+#endif
+   
   //check whether receive buffer is full
   wptr = cdata_wptr[0];
   state_ptr = &cdataSt[0][wptr][0];
@@ -248,11 +316,15 @@ interrupt void c_buffer2_ready_isr()
   }
 	
   //data length is number of words
+  for(i=0;i<2;i++)
   datalen = *(volatile unsigned short*)FPGA_C_DATA2_LEN_ADDR;
   
   if((datalen < ONE_C_FRAME_SIZE) || (datalen >3600))
   {
    	myprintf("state2_complet_isr: datalen error (%u)\n",datalen);
+#ifdef _DEBUG_INT_
+	gCLenErrCnt2++;
+#endif
     goto clear_buffer4;
   }
     
@@ -277,18 +349,29 @@ interrupt void c_buffer2_ready_isr()
   //todo :maybe check event-miss in EMCR/EMCRH, use this to indicate data-miss
 
 clear_buffer4:
+  #ifdef _DEGUG_INT_
+    gCDmaErrCnt2++;
+  #endif
 	release_fpga_buffer(C_MODE, 1);
 }
 
 //this is C sample data 1 transfer complete interrupt process
 void c_sample_data1_complete_isr()
 {
+#ifdef _DEBUG_INT_
+  gCDMAIntCnt1++;
+#endif
+
   release_fpga_buffer(C_MODE, 0);
 }
 
 //this is C sample data 2 transfer complete interrupt process
 void c_sample_data2_complete_isr()
 {
+#ifdef _DEBUG_INT_
+  gCDMAIntCnt2++;
+#endif
+
   release_fpga_buffer(C_MODE, 1);
 }
 

@@ -30,7 +30,9 @@ char gSumRef;
 char gDltRef;
 char gGT;
 
-long gReportCnt=0;
+long gCReportCnt=0;
+
+extern volatile char g_c_sample_full[MAX_POOL_NUM];
 
 void C_decode_init()
 {
@@ -46,6 +48,7 @@ void C_decode_init()
   {
     cdata_wptr[i] = 0;
   	cdata_rptr[i] = 0;
+    g_c_sample_full[i] = 0;
   }
   
   gCFrameReport.head_delimit = 0x55aa;
@@ -108,10 +111,7 @@ void construct_C_report(unsigned short *data)
   gCFrameReport.param1      = data[3] & ~(0x7<<10) | ((bs_dlt&0x7) << 10);
   gCFrameReport.param2      = ((gSumRef&0xff)<<8) | (gDltRef&0xff);
   gCFrameReport.code        = gBitValue<<1;
-  gCFrameReport.confidence  = gConf<<1;
-
-  //debug
-  gReportCnt++;
+  gCFrameReport.confidence  = gConf;
 }
 
 int C_select_recv()
@@ -233,7 +233,7 @@ void c_decode(int pool_id)
       
       //check whether F2 is overlapped
       j = i+1;   
-      if(j >= frame_cnt)
+      if(j > frame_cnt)
         break;
       
       for(;j<frame_cnt;j++)
@@ -246,11 +246,6 @@ void c_decode(int pool_id)
         
         if(f1_next_range <= f2_range)
         {
-          //set F1 overlap flag
-          v = (f2_range - f1_next_range)%29;
-          if((v<=2) || (v>=27)) //overlap on next F1
-          	overlap[i] = 1;
-          
           //check f2 overlap
           if(f2_range < f2_next_range)
           {
@@ -263,25 +258,48 @@ void c_decode(int pool_id)
                 && (f2_gt == f2_next_gt))
               {  
                 char pos;
-                
-                check_ok = 0;
-                //check C2-SPI
+   		       
+   		        //check C2-SPI
                 pos = (f1_next_range - f1_range)/29;
                 v = (f1_next_range - f1_range)%29;
-                if(!((pos == 3) && ((v<=2) || (v>=27)))) //overlap on next F1
+                if(((pos == 3) && ((v<=2) || (v>=27)))) //overlap on next F1
                 {
-                  spi_flag[j] = 1;
-                  break;
+                   spi_flag[j] = 1;
                 }
+                else
+                  check_ok = 0;
               }
             }
           }
+          
+		  //set F1 overlap flag
+          v = (f2_range - f1_next_range)%29;
+          if((v<=2) || (v>=27)) //overlap on next F1
+          	overlap[j] = 1;
         }
         else
           break;
       } //for
     } //if
-    
+    else
+	{
+	  j = i+1; 
+	  for(;j<frame_cnt;j++)
+      {
+        data = &data_ptr[j*ONE_C_FRAME_SIZE];
+        f1_next_range = data[0];
+        f2_next_range = f1_next_range + 406; 
+        if(f1_next_range <= f2_range)
+        {
+          //set F1 overlap flag
+          v = (f2_range - f1_next_range)%29;
+          if((v<=2) || (v>=27)) //overlap on next F1
+          	overlap[j] = 1;
+		}
+		else
+		  break;
+	  }
+	}
     if(check_ok == 0)
     	continue;
     	
@@ -413,7 +431,7 @@ void c_decode(int pool_id)
       //check next frame relation
       if((other_oba_relative == 0) || (other_amp_relative == 0))
       {  
-        for(k=i+1;k<frame_cnt;k++)
+        for(k=i+1;k<v_cnt;k++)
         {
           unsigned short next_f1_range;
           unsigned char next_f2_gt;
@@ -498,10 +516,12 @@ void c_decode(int pool_id)
     gGT = cframe[i].ref_gt; 
     construct_C_report(data);
     report_to_CPU((unsigned char *)&gCFrameReport);
+	gCReportCnt++;
   }
   
   //send END frame
   send_END_to_CPU(mode); //use last frame's mode
+  gCReportCnt++;
     
 _c_do_next:
   //release this state buffer

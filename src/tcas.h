@@ -85,9 +85,12 @@
 #define CPU_IER *(unsigned int*)(0x01800000 + 0x100)
 #define CPU_ICR *(unsigned int*)(0x01800000+ 0x11)
 
+#define LISTEN_MODE        0x0
 #define ACQUIRE_MODE       0x1
+#define CORDNATE_MODE      0x2
+#define BROADCAST_MODE     0x3
 
-#define UP_DIRECTION   1
-#define DOWN_DIRECTION 0
+#define UP_DIRECTION       0
+#define DOWN_DIRECTION     1
 
 #endif

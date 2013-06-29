@@ -40,7 +40,8 @@
 #define FPGA_STATE2_ADDR        (CS3_BASE + 0x1FC0*2)
 #define FPGA_DATA1_ADDR         (CS3_BASE)
 #define FPGA_DATA2_ADDR         (CS3_BASE + 0x1000*2)
-
+#define FPGA_AQUIRED_ADDR1      (CS3_BASE + (DATA_LEN_POS-2)*2)
+#define FPGA_AQUIRED_ADDR2      (CS3_BASE + (DATA_LEN_POS-1)*2)
 #define FPGA_DATA1_LEN_ADDR     (FPGA_STATE1_ADDR + DATA_LEN_POS*2)
 #define FPGA_DATA2_LEN_ADDR     (FPGA_STATE2_ADDR + DATA_LEN_POS*2)
 
@@ -65,7 +66,7 @@
 
 #define C_DATA_LEN_POS          0  //unit of length is short
 
-#define C_STATE_BUF_SIZE        1 /*short*/
+#define C_STATE_BUF_SIZE        1*2 /*short*/
 
 #define ONE_C_FRAME_SIZE         18 /*short*/
 #define MAX_CNT_IN_ONE_CSTEP     60 //todo

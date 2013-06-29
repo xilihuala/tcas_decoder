@@ -162,7 +162,11 @@ INLINE_DESC void init_gpio()
         EVM6424_GPIO_setTrigEdge(gpioNum, 1); //rising edge trigger
       else if(gpioList[i].int_stype == DROP_PULSE_INT)  
         EVM6424_GPIO_setTrigEdge(gpioNum, 2); //drop edge trigger
-       
+      
+   	  //clear gpio interrupt
+	  EVM6424_GPIO_clear_INT(gpioNum); 
+      
+	  //enable interrupt in this gpio port
       EVM6424_GPIO_enable_INT(gpioNum);
     }    
   }
@@ -253,7 +257,6 @@ INLINE_DESC int init_system()
   //clear dma int state
   clear_all_dma_int();
   
-    
   //init for decoder application
   rc = init_app();
   if(rc)
@@ -262,5 +265,13 @@ INLINE_DESC int init_system()
     return rc;
   }
   
+    //init crc
+  init_crc();
+
+  init_isr();
+
+  //init fpga
+  init_fpga();
+
   return 0;
 }

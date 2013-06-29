@@ -4,11 +4,12 @@
 //#include "tcas.h"
 //extern void test_error();
 
-extern volatile char g_s_sample_full[2];
-extern volatile char g_c_sample_full[2];
+extern volatile char g_s_sample_full[MAX_POOL_NUM];
+extern volatile char g_c_sample_full[MAX_POOL_NUM];
 
-unsigned long gSReleaseCnt=0;
-unsigned long gCReleaseCnt=0;
+unsigned long gSReleaseCnt[MAX_POOL_NUM]={0,0};
+unsigned long gCReleaseCnt[MAX_POOL_NUM]={0,0};
+
 int app_main();
 
 int main()
@@ -55,20 +56,6 @@ int app_main()
   trigger_test(pool_id);
 #endif
 
-  //init crc
-  init_crc();
-
-  //init fpga
-  init_fpga();
-
-  for(i=0;i<2;i++)
-  {
-    g_s_sample_full[i] = 0;
-    g_c_sample_full[i] = 0;
-  }
-
-  init_isr();
-
   //MAIN PROCESS
   while(1)
   {
@@ -79,9 +66,9 @@ int app_main()
       s_decode(pool_id);
       if(g_s_sample_full[pool_id])
 	  {
-//        release_fpga_buffer(S_MODE, pool_id);
+        release_fpga_buffer(S_MODE, pool_id);
         g_s_sample_full[pool_id]=0;
-		gSReleaseCnt++;
+		gSReleaseCnt[pool_id]++;
       }
     }
      
@@ -92,9 +79,9 @@ int app_main()
       c_decode(pool_id);
       if(g_c_sample_full[pool_id])
 	  {
-    //    release_fpga_buffer(C_MODE, pool_id);
+        release_fpga_buffer(C_MODE, pool_id);
     	g_c_sample_full[pool_id]=0;
-		gCReleaseCnt++;
+		gCReleaseCnt[pool_id]++;
 	  }
 	} 
   }

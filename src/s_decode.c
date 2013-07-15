@@ -119,7 +119,18 @@ long gSReportCnt=0;
 
 extern volatile char g_s_sample_full[MAX_POOL_NUM];
 
+unsigned char gDoCRCCheck;
+unsigned char gCRCDone;
+unsigned char gDoLowConfCheck;
+
+unsigned long gLowConfCount;
+
+
 #define RANGE_TO_DATA_OFFSET(range)  ((range+1)/2)
+
+#define DO_CRC  0
+#define TRY_CRC 1
+#define NO_CRC  2
 
 void S_decode_init()
 {
@@ -219,7 +230,8 @@ void construct_S_report(short *state_ptr)
   gSFrameReport.param0 |=  ((mode&0x7)<<13) \
                          | ((aq_bs&0x7)<<10) \
                          | ((t_b&0x1)<<9) \
-                         | ((omni&0x1)<<8);
+                         | ((omni&0x1)<<8)\
+                         | gCRCDone;
     
   gSFrameReport.param1 |= ((bs_sum&0x7)<<13) \
                         | ((bs_dlt&0x7)<<10) \
@@ -238,6 +250,34 @@ int check_tail(short st)
     return 1; 
   else
     return 0;
+}
+
+
+//TODO: no more than 34 low confidence bit, and no more than 7 continue low confidence bits
+int check_low_conf_consisten(int bit_len)
+{
+  int i,j,k;
+  int cont = 0; //continue count
+
+  if(gLowConfCount > 34) //no more than 34 low confidence bits
+    return -1;
+  else //no more than 7 continue low confidence bit
+  {
+    for(i=0;i<bit_len;i++)
+	{
+	   k = i/8;
+       j = 7-i&7;
+	   if(gSFrameReport.conf[k] & (1<<j))
+	   {
+	     cont ++;
+		 if(cont>7)
+		   return -1;
+	   }
+	   else 
+	     cont = 0;
+    }
+  }
+  return 0;
 }
 
 int do_frame_check(int pool_id, unsigned long sample_bit_len)
@@ -321,7 +361,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
       myprintf("one frame is over, continue to next: %u\n",pool_id);
       if(state_idx == -1)
         goto do_next;
-      break; //todo: now , only process one frame. more frame is ignored
+      break; //todo: now , in one buffer only process one frame. more frame is ignored
     }
     
     /*
@@ -422,31 +462,114 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
    
   /*NOTE: in DF17 and DF11, error protect is PI , not AP, PI always zero in DF17, DF11 , so do nothing*/  
   mode = state_ptr[state_idx] & 0x7;
+  df_code =  gSFrameReport.frame[0] >> 3; 
+  gDoLowConfCheck = 0;
 
-#ifndef __TEST_S_  
-  if((mode == ACQUIRE_MODE) || (mode == CORDNATE_MODE)) //acquire mode
-    addr = (state_ptr[i]&0xff)<<16 | state_ptr[i+1]; //TODO: USE 4061-4062
-  else
-    addr = 0; //todo: none-acquire mode need CRC or not, or something(exp. DF11 and DF17 need do CRC)?????  
-#else
-    addr = 0; //DF17
-#endif
-
-  df_code =  gSFrameReport.frame[0] >> 3;  
-  rc = 0;
-  if((df_code != 4) && (mode != BROADCAST_MODE))
-    rc = errCheck(&gSFrameReport, addr);
-  if(rc)
+  if(mode == LISTEN_MODE)
   {
-    myprintf("crc check failed! (%u)\n", pool_id);
-    return -1;  
+    if((df_code == 0x11) || (df_code == 0x17))
+	{
+      gDoCRCCheck = DO_CRC;
+	  addr = 0;
+    }
+    else if( (df_code == 0x0) || (df_code == 0x4))
+	{
+	  gDoCRCCheck = NO_CRC; 
+      gDoLowConfCheck = 1;
+    }
+	else 
+	  return -1; //drop
+  }
+  else if(mode == ACQUIRE_MODE)
+  {
+    if(df_code == 0x0)
+	{
+      gDoCRCCheck = TRY_CRC;
+	  gDoLowConfCheck = 1;
+      addr = (state_ptr[i]&0xff)<<16 | state_ptr[i+1]; //TODO: USE 4061-4062
+	}
+	else if(df_code == 0x4)
+	{
+      gDoCRCCheck = NO_CRC;
+      gDoLowConfCheck = 1;
+    }
+	else if(df_code == 0x11)
+	{
+	  gDoCRCCheck = DO_CRC;
+	  addr = 0;
+	}
+    else
+	  return -1; //drop
+  }
+
+  else if(mode == CORDNATE_MODE)
+  {
+    if((df_code == 0x11) || (df_code == 0x17))
+	{
+      gDoCRCCheck = DO_CRC;
+	  addr = 0;
+    }
+    else if((df_code == 0x0) || (df_code == 0x4))
+	{
+	  gDoCRCCheck = NO_CRC; 
+      gDoLowConfCheck = 1;
+    }
+	else if(df_code == 0x16)
+	{
+	  gDoCRCCheck = TRY_CRC;
+      addr = (state_ptr[i]&0xff)<<16 | state_ptr[i+1]; //TODO: USE 4061-4062
+	}
+	else 
+	  return -1; //drop
+    
+  }
+  else if(mode == BROADCAST_MODE)
+  {
+	if((df_code == 0x11) || (df_code == 0x17))
+	{
+      gDoCRCCheck = DO_CRC;
+	  addr = 0;
+    }
+    else if((df_code == 0x0) || (df_code == 0x4))
+	{
+	  gDoCRCCheck = NO_CRC; 
+      gDoLowConfCheck = 1;
+    }
+	else if(df_code == 0x16)
+	{
+	  gDoCRCCheck = NO_CRC;
+	}
+	else 
+	  return -1; //drop
   }
   
-  //filter out NON-TACS frame, ONLY REPORT DF0 DF4 DF11 DF16 DF17
-  
-  if((df_code != 0) && (df_code != 4) && (df_code != 11) && (df_code != 16) && (df_code != 17))
-    return -2;  //no need send this frame to CPU
-  
+  if(gDoLowConfCheck) //do continue low confidence check
+  {
+    if(check_low_conf_consisten(sample_bit_len/S_SAMPLE_FREQ)) 
+      return -1;
+  }
+
+
+  rc = 0;
+  if(gDoCRCCheck != NO_CRC)
+  {
+    rc = errCheck(&gSFrameReport, addr);
+  }
+  if(rc) //crc fail
+  {
+    if(gDoCRCCheck == DO_CRC)
+	{
+      myprintf("crc check failed! (%u)\n", pool_id);
+      return -1;   //drop
+	}
+	else if(gDoCRCCheck == TRY_CRC)
+	  gCRCDone = 0;
+	else
+      gCRCDone = 0;
+  }
+  else //crc success
+    gCRCDone = 1;
+
   return state_idx;
 }
 
@@ -516,7 +639,8 @@ void s_decode(int pool_id)
       idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
   }
 #else
-  idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
+//  idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
+	idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
 #endif
     
   //send report
@@ -972,6 +1096,8 @@ void multi_sample_baseline(unsigned char *sample, unsigned short level, unsigned
   int k;
   char _index;
   char _bit;
+  
+  gLowConfCount =0;
 
   //check from 8 to frame_len(56 or 112)
   for(j=8; j<bit_len+8; j++)
@@ -1055,7 +1181,10 @@ void multi_sample_baseline(unsigned char *sample, unsigned short level, unsigned
     if((diff >= 3) || (diff <= -3))
       gSFrameReport.conf[_index] &= ~(1<<_bit); /*HIGH_CONFIDENCE*/
     else
+	{
       gSFrameReport.conf[_index] |= 1<<_bit;    /*LOW_CONFIDENCE*/
+	  gLowConfCount ++;
+	}
     
     //set bit value
     if(diff <= 0)

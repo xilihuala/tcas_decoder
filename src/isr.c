@@ -250,7 +250,7 @@ interrupt void c_buffer1_ready_isr()
   }
 	
   //data length is number of words
-  for(i=0;i<2;i++)
+//  for(i=0;i<2;i++)
   datalen = *(volatile unsigned short*)FPGA_C_DATA1_LEN_ADDR;
   
   if((datalen < ONE_C_FRAME_SIZE) || (datalen >3600))
@@ -316,7 +316,7 @@ interrupt void c_buffer2_ready_isr()
   }
 	
   //data length is number of words
-  for(i=0;i<2;i++)
+  //for(i=0;i<2;i++)
   datalen = *(volatile unsigned short*)FPGA_C_DATA2_LEN_ADDR;
   
   if((datalen < ONE_C_FRAME_SIZE) || (datalen >3600))

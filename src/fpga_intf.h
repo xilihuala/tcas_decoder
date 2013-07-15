@@ -29,10 +29,10 @@
 #define END_FLAG_SIZE           1
 #define DATALEN_SIZE            1
 #define TIMESTAMP_SIZE          0
-#define S_STATE_BUF_SIZE        32
+#define S_STATE_BUF_SIZE        /*32*/64
 
 //data len position
-#define DATA_LEN_POS            0x1f
+#define DATA_LEN_POS            (S_STATE_BUF_SIZE-1)
 
 //S MODE STATE AND DATA BUFFER ADDRESS (CS3)
 

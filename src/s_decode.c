@@ -25,7 +25,7 @@ so, BYTE0.B0=DB7, BYTE0.B7=DB0 and so on.
 //#define __TEST_SIGNAL
 
 #define __TEST_S_
-//#undef  __TEST_S_
+#undef  __TEST_S_
 
 extern INLINE_DESC void myprintf(char *format, ...);
 extern INLINE_DESC void dmaprintf(char *format, ...);
@@ -86,7 +86,9 @@ short sdataSt[MAX_POOL_NUM][MAX_BUF_IN_S_POOL][S_STATE_BUF_SIZE];
 
 unsigned char sdata_rptr[MAX_POOL_NUM]; //read pointer for sample_data
 volatile unsigned char sdata_wptr[MAX_POOL_NUM]; //write pointer for sample_data
-
+volatile unsigned long gSCRCErrCnt=0;
+volatile unsigned long gSRefLevelCnt=0;
+volatile unsigned long gSReTrigerCnt=0;
 /*
   output temp frame
 */
@@ -299,6 +301,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   char mode;
   int cnt;
   unsigned long addr;
+  short	patchcnt;
     
   //todo : need do some frame valid check????
   ridx = sdata_rptr[pool_id];
@@ -338,9 +341,11 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   state_idx = -1;
   i=0; 
   cnt = 0;
+  patchcnt = 0;
   
   //check for every possible preamble
-  while(check_tail(state_ptr[i]))
+//  while(check_tail(state_ptr[i]))		//by fy
+  while (i<2)
   {
     cnt ++;
     if(cnt > MAX_PREAMBLE_NUMBER)
@@ -371,7 +376,11 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     //adjust start time ST1[15:14]
     jitter = state_ptr[i]>>14;
     if(jitter == 0x1)
+	{
       gJit = -1;
+	  if (((state_ptr[i]>>11)&0x7)==000)	//by fy
+		patchcnt++;
+	}
     else if(jitter == 0x2)
       gJit = 1;
   	else
@@ -402,6 +411,8 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     
     //calculate reference power level
     cal_refer_level(&sum_data_ptr[offset], &dlt_data_ptr[offset]);
+	  if ((cnt==0) && (ref_level<0x50))
+	    gSRefLevelCnt++;
 	  
 	  //check preamble overlap
     rc = overlap_frame_check(&sum_data_ptr[offset]);
@@ -416,7 +427,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     if(rc == 1) //drop this preample
     {
       myprintf("power test failed\n");
-      goto do_next;
+ // by fy    goto do_next;
     }
 	
     //DF validation check
@@ -424,7 +435,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     if(rc == 1) //drop this preample
     {
       myprintf("DF validation failed\n");
-      goto do_next;
+// by fy      goto do_next;
     }
 
     //retrigger, determine which one is the current frame
@@ -433,6 +444,8 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
       cur_level = ref_level;
       data_idx = offset;
       state_idx = i;
+	  if (cnt>1)
+		gSReTrigerCnt++;
     }
 
   do_next:
@@ -559,6 +572,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   {
     if(gDoCRCCheck == DO_CRC)
 	{
+	    gSCRCErrCnt++;
       myprintf("crc check failed! (%u)\n", pool_id);
       return -1;   //drop
 	}
@@ -626,18 +640,18 @@ void s_decode(int pool_id)
   //only use frame0's state to determin current mode
   mode = state_ptr[0] &0x7;
   
-  //check frame 
+  //check frame -----------by fy---------------
 #ifndef __TEST_S_  
   if(mode == ACQUIRE_MODE) //acquire mode
     idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
-  else if((mode == CORDNATE_MODE) || (mode == BROADCAST_MODE))
+  else if((mode == CORDNATE_MODE) || (mode == BROADCAST_MODE) || (mode == LISTEN_MODE))
     idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
-  else
-  {
-    idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
+  //else
+  //{
+    //idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
 	if(idx < 0)
-      idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
-  }
+      idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
+  //}
 #else
 //  idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
 	idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
@@ -711,52 +725,75 @@ int check_sum_ref_direction(unsigned char *sample_sum)
 void get_ref_pulse(short *state)
 {
   int lead_miss;
-    
-  lead_miss = (state[0]>>11) & 0x7; //st1(13:11)
-  if(0x7 != (lead_miss & 0x7)) //0s miss
+ if (1)   //by fy
+  {   
+    ref_cnt = 0;
+    lead_miss = (state[0]>>11) & 0x7; //st1(13:11)
+    if((gJit != 0) && ((lead_miss & 0x7) == 0)) //0s miss
+    {
+      ref_idx[0] = 10+gJit;
+      ref_idx[1] = 11+gJit;
+      ref_idx[2] = 12+gJit;
+
+  	  ref_idx[3] = 35+gJit;
+      ref_idx[4] = 36+gJit;
+      ref_idx[5] = 37+gJit;
+
+      ref_idx[6] = 45+gJit;
+      ref_idx[7] = 46+gJit;
+      ref_idx[8] = 47+gJit;
+
+      ref_cnt = 9;
+    }
+  else
   {
- 	//0s
-  	ref_idx[0] = 0;
+ 	//0us
+    ref_idx[0] = 0;
   	ref_idx[1] = 1;
   	ref_idx[2] = 2;
   	ref_cnt = 3;
-  	
-  	if(0 == (lead_miss & 0x1)) //1s
-  	{
-    	ref_idx[ref_cnt++] = 10+gJit;
-    	ref_idx[ref_cnt++] = 11+gJit;
-    	ref_idx[ref_cnt++] = 12+gJit;
-  	}
+
+    if(0 == (lead_miss & 0x1)) //1us
+    {
+   	  ref_idx[ref_cnt++] = 10+gJit;
+   	  ref_idx[ref_cnt++] = 11+gJit;
+   	  ref_idx[ref_cnt++] = 12+gJit;
+    }
+
+ 	  if(0 == (lead_miss & 0x2)) //3.5us
+ 	  {
+      ref_idx[ref_cnt++] = 35+gJit;
+   	  ref_idx[ref_cnt++] = 36+gJit;
+   	  ref_idx[ref_cnt++] = 37+gJit;
+ 	  }
   
-  	if(0 == (lead_miss & 0x2)) //3.5s
-  	{
-	    ref_idx[ref_cnt++] = 35+gJit;
-    	ref_idx[ref_cnt++] = 36+gJit;
-    	ref_idx[ref_cnt++] = 37+gJit;
-  	}
-  
-  	if(0 == (lead_miss & 0x4)) //4.5s
-  	{
-  	  ref_idx[ref_cnt++] = 45+gJit;
-  	  ref_idx[ref_cnt++] = 46+gJit;
-  	  ref_idx[ref_cnt++] = 47+gJit;
-  	}
-  }
+ 	  if(0 == (lead_miss & 0x4)) //4.5us
+ 	  {
+ 	    ref_idx[ref_cnt++] = 45+gJit;
+ 	    ref_idx[ref_cnt++] = 46+gJit;
+ 	    ref_idx[ref_cnt++] = 47+gJit;
+ 	  }
+  }   
+}
   else
   {
-    ref_idx[0] = 10+gJit;
-    ref_idx[1] = 11+gJit;
-    ref_idx[2] = 12+gJit;
+  	ref_idx[0] = 1;   //by fy
+  	ref_idx[1] = 2;
+  	ref_idx[2] = 3;
+  	
+    ref_idx[0] = 11;
+    ref_idx[1] = 12;
+    ref_idx[2] = 13;
 
-  	ref_idx[3] = 35+gJit;
-    ref_idx[4] = 36+gJit;
-    ref_idx[5] = 37+gJit;
+  	ref_idx[3] = 36;
+    ref_idx[4] = 37;
+    ref_idx[5] = 38;
 
-    ref_idx[6] = 45+gJit;
-    ref_idx[7] = 46+gJit;
-    ref_idx[8] = 47+gJit;
+    ref_idx[6] = 46;
+    ref_idx[7] = 47;
+    ref_idx[8] = 48;
 
-    ref_cnt = 9;
+    ref_cnt = 12;
   }
 }
 
@@ -990,10 +1027,12 @@ int df_valid(unsigned char *sample)
   int idx;
   //char p[5]={0,0,0,0,0};
   unsigned char maxpluse;
+  unsigned char nopulse;
   
   //check valide pulse position
   for(i=0;i<5;i++)
   {
+  	nopulse = 0;
     for(j=0;j<2;j++)
     {
       idx = 80 + i*10 + j*5;
@@ -1006,13 +1045,25 @@ int df_valid(unsigned char *sample)
       {
         maxpluse = getMax4(s2,s3,s4,s5);
         if ((maxpluse< ref_level) && ((ref_level- maxpluse) > 6*VALUE_DB1))
-          return 1; //todo : maybe check +1 and -1???
+          //return 1; //todo : maybe check +1 and -1???		--by fy
+		{
+			if (j==0)
+				nopulse = 1;
+			else if (nopulse==1)
+				return 1;	
+		}
         break;
       }
       else
       {
         if((s2<=DATA_THRESHOLD) && (s3<=DATA_THRESHOLD) && (s4<=DATA_THRESHOLD) && (s5<=DATA_THRESHOLD))
-         continue;
+         //continue;		-- by fy
+		{
+			if (j==0)
+				nopulse = 1;
+			else if (nopulse==1)
+				return 1;	
+		}
         else
         {
           s1 = sample[idx - 1];
@@ -1020,7 +1071,12 @@ int df_valid(unsigned char *sample)
           {
             maxpluse = getMax4(s1,s2,s3,s4);
             if ((maxpluse< ref_level) && ((ref_level- maxpluse) > 6*VALUE_DB1))
-              return 1;
+			{
+				if (j==0)
+					nopulse = 1;
+				else if (nopulse==1)
+					return 1;	
+			}
             break;
           }
           else
@@ -1032,7 +1088,12 @@ int df_valid(unsigned char *sample)
             {
               maxpluse = getMax4(s3,s4,s5,s6);
               if ((maxpluse< ref_level) && ((ref_level- maxpluse) > 6*VALUE_DB1))
-                return 1;
+			  {
+				if (j==0)
+					nopulse = 1;
+				else if (nopulse==1)
+					return 1;	
+			  }
               break;
             }
             /*else if((s3<=DATA_THRESHOLD) && (s4<=DATA_THRESHOLD) && (s5<=DATA_THRESHOLD) && (s6<=DATA_THRESHOLD))

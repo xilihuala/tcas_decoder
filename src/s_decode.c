@@ -56,6 +56,8 @@ void init_fpga_data(char num, unsigned long long tm);
 
 static unsigned char ref_idx[12];
 static unsigned int ref_cnt = 0;
+static unsigned char cur_level_sum;
+static unsigned char cur_level_dlt;
 static unsigned char ref_level;     //sum ref level
 static unsigned char ref_level_dlt; //dlt ref level
 
@@ -240,8 +242,8 @@ void construct_S_report(short *state_ptr)
                         | ((pat&0x1f)<<5) \
                         | (at&0x1f);
                                               
-  gSFrameReport.param2 = (ref_level<<8) \
-                        | ((ref_level_dlt<<1)&0xff);
+  gSFrameReport.param2 = (cur_level_sum<<8) \
+                        | ((cur_level_dlt<<1)&0xff);
 
 }
 
@@ -289,7 +291,6 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   unsigned long first_stm;
   char rc;
   char jitter;
-  short cur_level;
   long offset;
   long data_idx, state_idx;
   unsigned short datalen;
@@ -351,24 +352,6 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     if(cnt > MAX_PREAMBLE_NUMBER)
       break; //i can not do more check
     
-    stm = state_ptr[i+1] & 0x7fff + state_ptr[i+2];
-    
-    offset = RANGE_TO_DATA_OFFSET(stm-first_stm) ;
-    
-    if((offset + sample_bit_len + 8*S_SAMPLE_FREQ) > datalen /*MAX_RECV_SIZE*/)
-    {
-      myprintf("end of buffer at %u\n", ((unsigned int)i)/2);
-      break; //todo: need frame's range is in-order
-    }
-        
-    if((offset - data_idx) >= sample_bit_len)
-    {
-      myprintf("one frame is over, continue to next: %u\n",pool_id);
-      if(state_idx == -1)
-        goto do_next;
-      break; //todo: now , in one buffer only process one frame. more frame is ignored
-    }
-    
     /*
       if two or more pulse have the leading edge time +/-1 to LE cal from first pulse,
       we need adjust the arrive time +/-1 sample
@@ -376,15 +359,32 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     //adjust start time ST1[15:14]
     jitter = state_ptr[i]>>14;
     if(jitter == 0x1)
-	{
+	  {
       gJit = -1;
-	  if (((state_ptr[i]>>11)&0x7)==000)	//by fy
-		patchcnt++;
-	}
+	    if (((state_ptr[i]>>11)&0x7)==000)	//by fy
+		    patchcnt++;
+	  }
     else if(jitter == 0x2)
       gJit = 1;
   	else
       gJit = 0;
+    
+    stm = state_ptr[i+1] & 0x7fff + state_ptr[i+2];
+    offset = RANGE_TO_DATA_OFFSET(stm-first_stm)+gJit ;
+    
+    if((offset + sample_bit_len + 8*S_SAMPLE_FREQ) > datalen /*MAX_RECV_SIZE*/)
+    {
+      myprintf("end of buffer at %u\n", ((unsigned int)i)/2);
+      break; //todo: need frame's range is in-order
+    }
+        
+    if((offset - data_idx) >= (sample_bit_len + 8*S_SAMPLE_FREQ))
+    {
+      myprintf("one frame is over, continue to next: %u\n",pool_id);
+      if(state_idx == -1)
+        goto do_next;
+      break; //todo: now , in one buffer only process one frame. more frame is ignored
+    }
     
     //get ref pulse
     get_ref_pulse(&state_ptr[i]);
@@ -439,9 +439,10 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     }
 
     //retrigger, determine which one is the current frame
-    if((ref_level - cur_level) > 3*VALUE_DB1)
+    if((ref_level - cur_level_sum) > 3*VALUE_DB1)
     {
-      cur_level = ref_level;
+      cur_level_sum = ref_level;
+      cur_level_dlt = ref_level_dlt;
       data_idx = offset;
       state_idx = i;
 	  if (cnt>1)
@@ -471,13 +472,15 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     gSFrameReport.param0 |= (1<<7);
     
   //Bit and Confidence Declaration
-  multi_sample_baseline(&sum_data_ptr[data_idx], cur_level, sample_bit_len/S_SAMPLE_FREQ);
+  multi_sample_baseline(&sum_data_ptr[data_idx], cur_level_sum, sample_bit_len/S_SAMPLE_FREQ);
    
   /*NOTE: in DF17 and DF11, error protect is PI , not AP, PI always zero in DF17, DF11 , so do nothing*/  
   mode = state_ptr[state_idx] & 0x7;
   df_code =  gSFrameReport.frame[0] >> 3; 
+  
   gDoLowConfCheck = 0;
-
+  gDoCRCCheck = 0;
+  
   if(mode == LISTEN_MODE)
   {
     if((df_code == 0x11) || (df_code == 0x17))
@@ -571,19 +574,23 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   if(rc) //crc fail
   {
     if(gDoCRCCheck == DO_CRC)
-	{
+	  {
 	    gSCRCErrCnt++;
       myprintf("crc check failed! (%u)\n", pool_id);
       return -1;   //drop
-	}
-	else if(gDoCRCCheck == TRY_CRC)
-	  gCRCDone = 0;
-	else
-      gCRCDone = 0;
+	  }
+	  else if(gDoCRCCheck == TRY_CRC)
+	    gCRCDone = 0;
+	  else
+      gCRCDone = 0; //bug
   }
   else //crc success
-    gCRCDone = 1;
-
+  {
+    if(gDoCRCCheck == NO_CRC)
+      gCRCDone = 0;
+    else
+      gCRCDone = 1;
+  }
   return state_idx;
 }
 

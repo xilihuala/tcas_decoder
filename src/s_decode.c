@@ -337,8 +337,9 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   //get first pulse range
   first_stm = state_ptr[1] & 0x7fff + state_ptr[2];
   
-  cur_level = 0;
-  data_idx = 0;
+  cur_level_sum = 0;
+  cur_level_dlt = 0;
+  data_idx = -1;
   state_idx = -1;
   i=0; 
   cnt = 0;
@@ -439,7 +440,8 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     }
 
     //retrigger, determine which one is the current frame
-    if((ref_level - cur_level_sum) > 3*VALUE_DB1)
+    if( (state_idx == -1) 
+    	||((ref_level - cur_level_sum) > 3*VALUE_DB1))
     {
       cur_level_sum = ref_level;
       cur_level_dlt = ref_level_dlt;
@@ -448,7 +450,6 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
 	  if (cnt>1)
 		gSReTrigerCnt++;
     }
-
   do_next:
     i += 3;
   

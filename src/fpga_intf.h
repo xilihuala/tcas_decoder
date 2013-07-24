@@ -3,7 +3,7 @@
 
 
 //value of db1 
-#define VALUE_DB1    0x3
+#define VALUE_DB1    0x4  //0x3
 
 #define CS3_BASE                0x44000000
 #define CS4_BASE                0x46000000
@@ -23,7 +23,7 @@
 #define MAX_FRAME_NUM      3
 
 //the max number of frame headers in one frame buffer
-#define MAX_PREAMBLE_NUMBER  10
+#define MAX_PREAMBLE_NUMBER  15
 
 //state buffer size (short size)
 #define END_FLAG_SIZE           1

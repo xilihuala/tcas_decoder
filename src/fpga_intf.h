@@ -3,7 +3,7 @@
 
 
 //value of db1 
-#define VALUE_DB1    0x4  //0x3
+#define VALUE_DB1    0x4  //0x3  by fy
 
 #define CS3_BASE                0x44000000
 #define CS4_BASE                0x46000000

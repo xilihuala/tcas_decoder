@@ -91,6 +91,11 @@ volatile unsigned char sdata_wptr[MAX_POOL_NUM]; //write pointer for sample_data
 volatile unsigned long gSCRCErrCnt=0;
 volatile unsigned long gSRefLevelCnt=0;
 volatile unsigned long gSReTrigerCnt=0;
+volatile unsigned long gSDFCnt=0;
+volatile unsigned long gSOverlapCnt=0;
+volatile unsigned long gSConsistentCnt=0;
+volatile unsigned long gSLenErrCnt=0;
+
 /*
   output temp frame
 */
@@ -319,7 +324,9 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   	return -2;
   else if(datalen < sample_bit_len) //this is an imcomplete frame
     return -2; 
-
+  
+  if (datalen < 1180)
+	gSLenErrCnt++;
   if((state_ptr[0] & 0xff00u) == 0xff00u)  // AA section
   {
     myprintf("no preamble in buffer\n");
@@ -335,7 +342,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   dlt_data_ptr = &sample_data_dlt[pool_id][ridx][0];  
   
   //get first pulse range
-  first_stm = state_ptr[1] & 0x7fff + state_ptr[2];
+  first_stm = ((state_ptr[1] & 0x7fff)<<16) + state_ptr[2];		//by fy
   
   cur_level_sum = 0;
   cur_level_dlt = 0;
@@ -346,8 +353,8 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   patchcnt = 0;
   
   //check for every possible preamble
-//  while(check_tail(state_ptr[i]))		//by fy
-  while (i<2)
+  while(check_tail(state_ptr[i]))		//by fy
+//  while (i<2)
   {
     cnt ++;
     if(cnt > MAX_PREAMBLE_NUMBER)
@@ -370,7 +377,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   	else
       gJit = 0;
     
-    stm = state_ptr[i+1] & 0x7fff + state_ptr[i+2];
+    stm = ((state_ptr[i+1] & 0x7fff)<<16) + state_ptr[i+2];		// by fy
     offset = RANGE_TO_DATA_OFFSET(stm-first_stm)+gJit ;
     
     if((offset + sample_bit_len + 8*S_SAMPLE_FREQ) > datalen /*MAX_RECV_SIZE*/)
@@ -411,44 +418,51 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     }  
     
     //calculate reference power level
-    cal_refer_level(&sum_data_ptr[offset], &dlt_data_ptr[offset]);
+    //cal_refer_level(&sum_data_ptr[offset], &dlt_data_ptr[offset]);
+    cal_refer_level(&sum_data_ptr[offset-gJit], &dlt_data_ptr[offset-gJit]);	//by fy
 	  if ((cnt==0) && (ref_level<0x50))
 	    gSRefLevelCnt++;
 	  
 	  //check preamble overlap
-    rc = overlap_frame_check(&sum_data_ptr[offset]);
+    //rc = overlap_frame_check(&sum_data_ptr[offset]);	  
+    rc = overlap_frame_check(&sum_data_ptr[offset-gJit]);   //by fy
     if(rc == 1) //drop this preample
     {
+	  gSOverlapCnt++;
       myprintf("preamble overlap failed\n");
       goto do_next;
     }
-    
+ 
     //consisten power test
-    rc = consistent_power_test(&sum_data_ptr[offset]);
+    //rc = consistent_power_test(&sum_data_ptr[offset]);
+        rc = consistent_power_test(&sum_data_ptr[offset-gJit]);   //by fy
     if(rc == 1) //drop this preample
     {
+	  gSConsistentCnt++;
       myprintf("power test failed\n");
- // by fy    goto do_next;
+ 	  goto do_next;
     }
 	
     //DF validation check
-    rc = df_valid(&sum_data_ptr[offset]);
+    //rc = df_valid(&sum_data_ptr[offset]);
+    rc = df_valid(&sum_data_ptr[offset]);   //by fy
     if(rc == 1) //drop this preample
     {
+	  gSDFCnt++;
       myprintf("DF validation failed\n");
-// by fy      goto do_next;
+      goto do_next;
     }
 
     //retrigger, determine which one is the current frame
     if( (state_idx == -1) 
     	||((ref_level - cur_level_sum) > 3*VALUE_DB1))
     {
+	  if (cnt>1)
+		gSReTrigerCnt++;
       cur_level_sum = ref_level;
       cur_level_dlt = ref_level_dlt;
       data_idx = offset;
       state_idx = i;
-	  if (cnt>1)
-		gSReTrigerCnt++;
     }
   do_next:
     i += 3;
@@ -739,47 +753,47 @@ void get_ref_pulse(short *state)
     lead_miss = (state[0]>>11) & 0x7; //st1(13:11)
     if((gJit != 0) && ((lead_miss & 0x7) == 0)) //0s miss
     {
-      ref_idx[0] = 10+gJit;
-      ref_idx[1] = 11+gJit;
-      ref_idx[2] = 12+gJit;
+      ref_idx[0] = 10+gJit+1;       //by fy
+      ref_idx[1] = 11+gJit+1;
+      ref_idx[2] = 12+gJit+1;
 
-  	  ref_idx[3] = 35+gJit;
-      ref_idx[4] = 36+gJit;
-      ref_idx[5] = 37+gJit;
+  	  ref_idx[3] = 35+gJit+1;
+      ref_idx[4] = 36+gJit+1;
+      ref_idx[5] = 37+gJit+1;
 
-      ref_idx[6] = 45+gJit;
-      ref_idx[7] = 46+gJit;
-      ref_idx[8] = 47+gJit;
+      ref_idx[6] = 45+gJit+1;
+      ref_idx[7] = 46+gJit+1;
+      ref_idx[8] = 47+gJit+1;
 
       ref_cnt = 9;
     }
   else
   {
  	//0us
-    ref_idx[0] = 0;
-  	ref_idx[1] = 1;
-  	ref_idx[2] = 2;
+    ref_idx[0] = 0+1;
+  	ref_idx[1] = 1+1;
+  	ref_idx[2] = 2+1;
   	ref_cnt = 3;
 
     if(0 == (lead_miss & 0x1)) //1us
     {
-   	  ref_idx[ref_cnt++] = 10+gJit;
-   	  ref_idx[ref_cnt++] = 11+gJit;
-   	  ref_idx[ref_cnt++] = 12+gJit;
+   	  ref_idx[ref_cnt++] = 10+gJit+1;
+   	  ref_idx[ref_cnt++] = 11+gJit+1;
+   	  ref_idx[ref_cnt++] = 12+gJit+1;
     }
 
  	  if(0 == (lead_miss & 0x2)) //3.5us
  	  {
-      ref_idx[ref_cnt++] = 35+gJit;
-   	  ref_idx[ref_cnt++] = 36+gJit;
-   	  ref_idx[ref_cnt++] = 37+gJit;
+      ref_idx[ref_cnt++] = 35+gJit+1;
+   	  ref_idx[ref_cnt++] = 36+gJit+1;
+   	  ref_idx[ref_cnt++] = 37+gJit+1;
  	  }
   
  	  if(0 == (lead_miss & 0x4)) //4.5us
  	  {
- 	    ref_idx[ref_cnt++] = 45+gJit;
- 	    ref_idx[ref_cnt++] = 46+gJit;
- 	    ref_idx[ref_cnt++] = 47+gJit;
+ 	    ref_idx[ref_cnt++] = 45+gJit+1;
+ 	    ref_idx[ref_cnt++] = 46+gJit+1;
+ 	    ref_idx[ref_cnt++] = 47+gJit+1;
  	  }
   }   
 }
@@ -789,17 +803,17 @@ void get_ref_pulse(short *state)
   	ref_idx[1] = 2;
   	ref_idx[2] = 3;
   	
-    ref_idx[0] = 11;
-    ref_idx[1] = 12;
-    ref_idx[2] = 13;
+    ref_idx[3] = 11;
+    ref_idx[4] = 12;
+    ref_idx[5] = 13;
 
-  	ref_idx[3] = 36;
-    ref_idx[4] = 37;
-    ref_idx[5] = 38;
+  	ref_idx[6] = 36;
+    ref_idx[7] = 37;
+    ref_idx[8] = 38;
 
-    ref_idx[6] = 46;
-    ref_idx[7] = 47;
-    ref_idx[8] = 48;
+    ref_idx[9] = 46;
+    ref_idx[10] = 47;
+    ref_idx[11] = 48;
 
     ref_cnt = 12;
   }
@@ -995,27 +1009,38 @@ int consistent_power_test(unsigned char *sample)
 //todo : average in all samples when sample freq changes
 
   //check 0us
-  v = (sample[0]+sample[1]+sample[2]+sample[3]+sample[4])/5;
+  //v = (sample[0]+sample[1]+sample[2]+sample[3]+sample[4])/5;
+  v = (sample[1]+sample[2]+sample[3])/3;  
   if(_abs_diff(v, ref_level) < 3*VALUE_DB1)
     cnt ++;
     
   //check 1us
-  v = (sample[10+gJit]+sample[11+gJit]+sample[12+gJit]+sample[13+gJit]+sample[14+gJit])/5;
+  //v = (sample[10+gJit]+sample[11+gJit]+sample[12+gJit]+sample[13+gJit]+sample[14+gJit])/5;
+  v = (sample[11+gJit]+sample[12+gJit]+sample[13+gJit])/3;  
   if(_abs_diff(v, ref_level) < 3*VALUE_DB1)
     cnt ++;
   
   //check 3.5us
-  v = (sample[35+gJit]+sample[36+gJit]+sample[37+gJit]+sample[38+gJit]+sample[39+gJit])/5;
+  //v = (sample[35+gJit]+sample[36+gJit]+sample[37+gJit]+sample[38+gJit]+sample[39+gJit])/5;
+  v = (sample[36+gJit]+sample[37+gJit]+sample[38+gJit])/3;  
   if(_abs_diff(v, ref_level) < 3*VALUE_DB1)
     cnt ++;
   
   //check 4.5us
-  v = (sample[45+gJit]+sample[46+gJit]+sample[47+gJit]+sample[48+gJit]+sample[49+gJit])/5;
+  //v = (sample[45+gJit]+sample[46+gJit]+sample[47+gJit]+sample[48+gJit]+sample[49+gJit])/5;
+    v = (sample[46+gJit]+sample[47+gJit]+sample[48+gJit])/3;
   if(_abs_diff(v, ref_level) < 3*VALUE_DB1)
     cnt ++;
   
   if(cnt <= 2)
     return 1;
+  
+  return 0;
+}
+
+/*check first five data power level*/
+/*
+1. in each chip'sturn 1;
   
   return 0;
 }
@@ -1321,13 +1346,7 @@ void init_test_data()
   {
     if(cnt%5 == 0)
       v = 1 - v;
-    fpga_data1[i] = 50*v;
-    cnt ++;
-  }
-  
-  memcpy(fpga_data2, fpga_data1, sizeof(fpga_data1));
-     
-  //init state
+    fpga_data1[i] = 50*v;it state
   init_fpga_data(0,0);
   init_fpga_data(0,1);
     

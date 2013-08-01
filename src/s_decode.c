@@ -60,6 +60,7 @@ static unsigned char cur_level_sum;
 static unsigned char cur_level_dlt;
 static unsigned char ref_level;     //sum ref level
 static unsigned char ref_level_dlt; //dlt ref level
+static unsigned char cur_rep_len;   
 
 
 //fpga_data section from 0x10800000 to 0x10820000 (128k),
@@ -239,7 +240,8 @@ void construct_S_report(short *state_ptr)
   gSFrameReport.param0 |=  ((mode&0x7)<<13) \
                          | ((aq_bs&0x7)<<10) \
                          | ((t_b&0x1)<<9) \
-                         | ((omni&0x1)<<8)\
+                         | ((omni&0x1)<<8) \
+                         | ((cur_rep_len)<<7) \
                          | gCRCDone;
     
   gSFrameReport.param1 |= ((bs_sum&0x7)<<13) \
@@ -665,14 +667,23 @@ void s_decode(int pool_id)
   //check frame -----------by fy---------------
 #ifndef __TEST_S_  
   if(mode == ACQUIRE_MODE) //acquire mode
+  {
     idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
+    cur_rep_len = 0;
+  }
   else if((mode == CORDNATE_MODE) || (mode == BROADCAST_MODE) || (mode == LISTEN_MODE))
+  {
     idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
+    cur_rep_len = 1;
   //else
   //{
     //idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
-	if(idx < 0)
+	  if(idx < 0)
+	  {
       idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);
+      cur_rep_len = 0;
+    }
+  }
   //}
 #else
 //  idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);

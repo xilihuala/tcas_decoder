@@ -61,7 +61,7 @@ static unsigned char cur_level_dlt;
 static unsigned char ref_level;     //sum ref level
 static unsigned char ref_level_dlt; //dlt ref level
 static unsigned char cur_rep_len;   
-
+ 
 
 //fpga_data section from 0x10800000 to 0x10820000 (128k),
 //#pragma DATA_ALIGN (sample_data, 128);

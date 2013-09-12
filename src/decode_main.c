@@ -28,21 +28,10 @@ int app_main()
 {
   int rc;
   int pool_id;
-  int i;
+//  int i;
 //  myprintf("app main start\n");
     
-  //only for flash boot debug
-  #ifdef __TIME_TEST
-  while(0)
-  {
-
-    EVM6424_GPIO_setOutput(100, 0);
-    for(i=0;i<5000;i++);
-    EVM6424_GPIO_setOutput(100, 1);
-    for(i=0;i<5000;i++);
-  }
-  #endif
-    
+  
   //do some init work
   rc = init_system();
   if(rc)
@@ -50,6 +39,7 @@ int app_main()
     myprintf("system init failed, progame is exiting... \n");
     return rc;
   }
+
   
 #ifdef __TEST__
   init_test_data();

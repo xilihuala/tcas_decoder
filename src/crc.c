@@ -427,7 +427,7 @@ int errCheck(S_REPORT_T *report, unsigned long addr)
   int bitlen;
   unsigned char *buf;
 
-  if(report->param0 | (1<<7))
+  if(report->param0 & (1<<7))
     bitlen = 88; //long frame
   else
     bitlen = 32;  //short frame

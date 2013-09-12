@@ -500,7 +500,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   
   if(mode == LISTEN_MODE)
   {
-    if((df_code == 0x11) || (df_code == 0x17))
+    if((df_code == 11) || (df_code == 17))    /*0x11,0x17*/
 	{
       gDoCRCCheck = DO_CRC;
 	  addr = 0;
@@ -526,7 +526,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
       gDoCRCCheck = NO_CRC;
       gDoLowConfCheck = 1;
     }
-	else if(df_code == 0x11)
+	else if(df_code == 11)
 	{
 	  gDoCRCCheck = DO_CRC;
 	  addr = 0;
@@ -537,7 +537,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
 
   else if(mode == CORDNATE_MODE)
   {
-    if((df_code == 0x11) || (df_code == 0x17))
+    if((df_code == 11) || (df_code == 17))
 	{
       gDoCRCCheck = DO_CRC;
 	  addr = 0;
@@ -547,7 +547,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
 	  gDoCRCCheck = NO_CRC; 
       gDoLowConfCheck = 1;
     }
-	else if(df_code == 0x16)
+	else if(df_code == 16)
 	{
 	  gDoCRCCheck = TRY_CRC;
       addr = (state_ptr[i]&0xff)<<16 | state_ptr[i+1]; //TODO: USE 4061-4062
@@ -558,7 +558,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   }
   else if(mode == BROADCAST_MODE)
   {
-	if((df_code == 0x11) || (df_code == 0x17))
+	if((df_code == 11) || (df_code == 17))
 	{
       gDoCRCCheck = DO_CRC;
 	  addr = 0;
@@ -568,7 +568,7 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
 	  gDoCRCCheck = NO_CRC; 
       gDoLowConfCheck = 1;
     }
-	else if(df_code == 0x16)
+	else if(df_code == 16)
 	{
 	  gDoCRCCheck = NO_CRC;
 	}

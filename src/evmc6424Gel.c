@@ -45,9 +45,9 @@ initDSP( )
     Setup_Pin_Mux( );                   // Setup Pin Mux
     Setup_Psc_All_On( );                // Setup All Power Domains
 
-//    Setup_PLL1_594_MHz_OscIn( );        // Setup Pll1 [DSP @ 594 MHz][1.20V]
-//    Setup_PLL2_DDR_162_MHz_OscIn( );    // Setup Pll2 [DDR @ 162 MHz]
-//    Setup_DDR_162_MHz( );               // Setup DDR2 [162 MHz]
+    //Setup_PLL1_594_MHz_OscIn( );        // Setup Pll1 [DSP @ 594 MHz][1.20V]
+    //Setup_PLL2_DDR_162_MHz_OscIn( );    // Setup Pll2 [DDR @ 162 MHz]
+    //Setup_DDR_162_MHz( );               // Setup DDR2 [162 MHz]
 
   //Reset_EMIF_16Bit_Bus( );            // Reset Async-EMIF [16-bit bus]
     Setup_EMIF_CS2_NorFlash_16Bit( );   // Setup NOR Flash
@@ -55,7 +55,7 @@ initDSP( )
   //Setup_EMIF_CS2_NandFlash_8Bit( );   // Setup NAND Flash
 
     Setup_EMIF_CS3_FPGA_16Bit( );
-    Setup_EMIF_CS4_FPGA_16Bit( );
+	Setup_EMIF_CS4_FPGA_16Bit( );
     CheckPCI( );
     Disable_EDMA( );                // Disable EDMA
         
@@ -840,7 +840,7 @@ Setup_EMIF_CS3_FPGA_16Bit( )
     #define EMIF_CS3_PTR            *( unsigned char* )( 0x44000000 )
 
     GEL_TextOut( "Setup EMIF CS3 - FPGA (16-bit bus)... " );
-    AEMIF_A2CR = 0x00300605;        // 
+    AEMIF_A2CR = 0x00300105;        // 0x00300605
     AEMIF_NANDFCR &= 0xfffffffe;    // Disable Hw NAND Flash controller
     GEL_TextOut( "[Done]\n" );
 }

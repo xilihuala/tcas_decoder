@@ -1,93 +1,84 @@
 ------------------------  test_edma_lld.pjt - Release  ------------------------
-[adsb_crc.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "adsb_crc.c"
+[bios_edma3_drv_sample_c642x_cfg.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "bios_edma3_drv_sample_c642x_cfg.c"
 
-[adsb_main.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "adsb_main.c"
+[c_decode.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "c_decode.c"
 
-[bios_edma3_drv_sample_c642x_cfg.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "bios_edma3_drv_sample_c642x_cfg.c"
-"bios_edma3_drv_sample_c642x_cfg.c", line 48: fatal error: could not open source file "ti/sdo/edma3/drv/edma3_drv.h"
-1 fatal error detected in the compilation of "bios_edma3_drv_sample_c642x_cfg.c".
-Compilation terminated.
+[crc.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "crc.c"
 
->> Compilation failure
+[decode_dma.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "decode_dma.c"
 
-[edma3_adsb.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "edma3_adsb.c"
-"edma3_adsb.c", line 1: fatal error: could not open source file "ti/sdo/edma3/drv/sample/bios_edma3_drv_sample.h"
-1 fatal error detected in the compilation of "edma3_adsb.c".
-Compilation terminated.
+[decode_main.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "decode_main.c"
 
->> Compilation failure
+[edma3_drv_sample_cs.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "edma3_drv_sample_cs.c"
 
-[edma3_drv_sample_cs.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "edma3_drv_sample_cs.c"
-"edma3_drv_sample_cs.c", line 59: fatal error: could not open source file "ti/sdo/edma3/drv/sample/bios_edma3_drv_sample.h"
-1 fatal error detected in the compilation of "edma3_drv_sample_cs.c".
-Compilation terminated.
+[edma3_drv_sample_init_i.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "edma3_drv_sample_init_i.c"
 
->> Compilation failure
+[evmc6424Gel.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "evmc6424Gel.c"
+"evmc6424Gel.c", line 377: warning: variable "pll1_freq" was set but never used
+"evmc6424Gel.c", line 524: warning: variable "pll_div2" was declared but never referenced
+"evmc6424Gel.c", line 528: warning: variable "ddr2_freq" was set but never used
+"evmc6424Gel.c", line 667: warning: variable "dummy_read" was set but never used
+"evmc6424Gel.c", line 876: warning: variable "aeaw" was declared but never referenced
+"evmc6424Gel.c", line 877: warning: variable "aem" was declared but never referenced
 
-[edma3_drv_sample_init_i.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "edma3_drv_sample_init_i.c"
-"edma3_drv_sample_init_i.c", line 46: fatal error: could not open source file "ti/sdo/edma3/drv/sample/bios_edma3_drv_sample.h"
-1 fatal error detected in the compilation of "edma3_drv_sample_init_i.c".
-Compilation terminated.
+[fpga_intf.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "fpga_intf.c"
+"fpga_intf.c", line 77: warning: variable "temp" was set but never used
 
->> Compilation failure
+[init.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "init.c"
+"init.c", line 264: warning: statement is unreachable
 
-[evmc6424Gel.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "evmc6424Gel.c"
-"evmc6424Gel.c", line 376: warning: variable "pll1_freq" was set but never used
-"evmc6424Gel.c", line 523: warning: variable "pll_div2" was declared but never referenced
-"evmc6424Gel.c", line 527: warning: variable "ddr2_freq" was set but never used
-"evmc6424Gel.c", line 666: warning: variable "dummy_read" was set but never used
-"evmc6424Gel.c", line 875: warning: variable "aeaw" was declared but never referenced
-"evmc6424Gel.c", line 876: warning: variable "aem" was declared but never referenced
+[intvecs.asm] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "intvecs.asm"
 
-[frame_check.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "frame_check.c"
-"frame_check.c", line 174: error: identifier "d_state_isr" is undefined
-"frame_check.c", line 193: error: identifier "d_state_isr" is undefined
-"frame_check.c", line 209: error: identifier "d_state_isr" is undefined
-"frame_check.c", line 225: error: identifier "d_state_isr" is undefined
-"frame_check.c", line 152: warning: variable "temp" was set but never used
-"frame_check.c", line 153: warning: variable "k" was declared but never referenced
-"frame_check.c", line 266: error: identifier "d_state_isr" is undefined
-"frame_check.c", line 283: error: identifier "d_state_isr" is undefined
-"frame_check.c", line 296: error: identifier "d_state_isr" is undefined
-"frame_check.c", line 313: error: identifier "d_state_isr" is undefined
-"frame_check.c", line 252: warning: variable "temp" was set but never used
-"frame_check.c", line 329: warning: variable "temp" was set but never used
-"frame_check.c", line 344: warning: variable "temp" was set but never used
-"frame_check.c", line 467: warning: variable "temp" was set but never used
-"frame_check.c", line 543: error: identifier "d_frame_isr" is undefined
-"frame_check.c", line 553: error: identifier "d_frame_isr" is undefined
-"frame_check.c", line 568: error: identifier "d_frame_isr" is undefined
-"frame_check.c", line 579: error: identifier "d_frame_isr" is undefined
-"frame_check.c", line 609: error: identifier "d_frame_isr" is undefined
-"frame_check.c", line 636: error: identifier "d_frame_check" is undefined
-"frame_check.c", line 645: error: identifier "d_frame_check" is undefined
-"frame_check.c", line 654: error: identifier "d_frame_check" is undefined
-"frame_check.c", line 685: error: identifier "d_frame_isr" is undefined
-"frame_check.c", line 692: error: identifier "d_frame_isr" is undefined
-"frame_check.c", line 760: error: identifier "d_frame_isr" is undefined
-"frame_check.c", line 1075: warning: variable "i" was declared but never referenced
-"frame_check.c", line 1289: warning: variable "i" was declared but never referenced
-"frame_check.c", line 1497: warning: statement is unreachable
-"frame_check.c", line 1506: warning: statement is unreachable
-"frame_check.c", line 1716: warning: variable "temp" was set but never used
-"frame_check.c", line 1521: warning: variable "i" was declared but never referenced
-"frame_check.c", line 1523: warning: variable "wait_cnt" was set but never used
-"frame_check.c", line 1874: warning: label "next_pool" was declared but never referenced
-19 errors detected in the compilation of "frame_check.c".
+[isr.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "isr.c"
+"isr.c", line 235: warning: variable "i" was declared but never referenced
+"isr.c", line 301: warning: variable "i" was declared but never referenced
 
->> Compilation failure
+[s_decode.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "s_decode.c"
+"s_decode.c", line 1059: warning: nested comment is not allowed
 
-[intvecs.asm] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "intvecs.asm"
+[utils.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/tcas_decoder/proj/Release" -mv6400 -@"../proj/Release.lkf" "utils.c"
 
-[test_adsb_dma.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "test_adsb_dma.c"
-"test_adsb_dma.c", line 3: fatal error: could not open source file "ti/sdo/edma3/drv/sample/bios_edma3_drv_sample.h"
-1 fatal error detected in the compilation of "test_adsb_dma.c".
-Compilation terminated.
+[Linking...] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -@"Release.lkf"
+<Linking>
+
+undefined                        first referenced
+ symbol                              in file
+---------                        ----------------
+_EDMA3_DRV_setPaRAM              D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EDMA3_DRV_requestChannel        D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EDMA3_DRV_enableTransfer        D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EDMA3_DRV_waitAndClearTcc       D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EDMA3_DRV_checkAndClearTcc      D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EDMA3_DRV_linkChannel           D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EDMA3_DRV_chainChannel          D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EVM6424_GPIO_clear_INT          D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EDMA3_DRV_setTransferParams     D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_EDMA3_DRV_setEvtQPriority       D:\\tcas_decoder\\proj\\Release\\decode_dma.obj
+_lisrEdma3TC2ErrHandler0         D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_EDMA3_DRV_create                D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_lisrEdma3TC6ErrHandler0         D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_lisrEdma3TC3ErrHandler0         D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_lisrEdma3TC0ErrHandler0         D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_lisrEdma3TC7ErrHandler0         D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_EDMA3_DRV_delete                D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_lisrEdma3TC4ErrHandler0         D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_EDMA3_DRV_open                  D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_lisrEdma3TC1ErrHandler0         D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_lisrEdma3TC5ErrHandler0         D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_EDMA3_DRV_close                 D:\\tcas_decoder\\proj\\Release\\edma3_drv_sample_init_i.obj
+_EVM6424_GPIO_setDir             D:\\tcas_decoder\\proj\\Release\\init.obj
+_EVM6424_GPIO_enable_INT         D:\\tcas_decoder\\proj\\Release\\init.obj
+__clrPinMux                      D:\\tcas_decoder\\proj\\Release\\init.obj
+_EVM6424_GPIO_ClearAllTrigEdge   D:\\tcas_decoder\\proj\\Release\\init.obj
+_EVM6424_GPIO_setTrigEdge        D:\\tcas_decoder\\proj\\Release\\init.obj
+_EVM6424_GPIO_setOutput          D:\\tcas_decoder\\proj\\Release\\init.obj
+_EVM6424_GPIO_init               D:\\tcas_decoder\\proj\\Release\\init.obj
+__setPinMux                      D:\\tcas_decoder\\proj\\Release\\init.obj
+_edma3ComplHandler0              D:\\tcas_decoder\\proj\\Release\\intvecs.obj
+_edma3CCErrHandler0              D:\\tcas_decoder\\proj\\Release\\intvecs.obj
+>>   error: symbol referencing errors - './Release/test_edma_lld.out' not built
 
 >> Compilation failure
-
-[test_isr.c] "C:\CCStudio_v3.3\C6000\cgtools\bin\cl6x" -g -o3 -fr"D:/edma3_lld_1_04_00/packages/ti/sdo/edma3/drv/sample/build/test_edma_lld/Release" -mv6400 -@"../../build/test_edma_lld/Release.lkf" "test_isr.c"
-"test_isr.c", line 140: warning: variable "i" was declared but never referenced
 
 Build Complete,
-  24 Errors, 21 Warnings, 0 Remarks.
+  2 Errors, 11 Warnings, 0 Remarks.

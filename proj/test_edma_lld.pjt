@@ -40,7 +40,7 @@ Options=-g -fr"$(Proj_dir)\Debug" -d"_DEBUG" -mv6400+
 Options=-g -o3 -fr"$(Proj_dir)\Release" -mv6400
 
 ["Linker" Settings: "Debug"]
-Options=-a -cr -erst -m".\Debug\test_edma_lld.map" -o".\Debug\test_edma_lld.out" -w -x -i"$(Proj_dir)\..\lib\" -l"edma3_drv_bios.lib" -l"edma3_rm_bios.lib" -l"evm6424bsl.lib"
+Options=-a -c -erst -m".\Debug\test_edma_lld.map" -o".\Debug\test_edma_lld.out" -w -x -i"$(Proj_dir)\..\lib\" -l"edma3_drv_bios.lib" -l"edma3_rm_bios.lib" -l"evm6424bsl.lib"
 
 ["Linker" Settings: "Release"]
 Options=-c -m".\Release\test_edma_lld.map" -o".\Release\test_edma_lld.out" -w -x

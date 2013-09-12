@@ -1,7 +1,7 @@
 ******************************************************************************
           TMS320C6x COFF Linker PC v6.0.8                      
 ******************************************************************************
->> Linked Tue Feb 19 16:45:51 2013
+>> Linked Thu Aug 22 11:12:57 2013
 
 OUTPUT FILE NAME:   <./Debug/NORWriter.out>
 ENTRY POINT SYMBOL: "_c_int00"  address: 1080ccc0

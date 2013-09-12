@@ -237,6 +237,29 @@ void init_fpga()
 INLINE_DESC int init_system()
 {
   int rc;
+  int i;
+
+/*----------------------------  */    
+  //only for flash boot debug
+  while(0)
+  {
+  Setup_Cache( );                     // Setup L1P/L1D Cache
+  Setup_Pin_Mux( );                   // Setup Pin Mux
+  Setup_Psc_All_On( );                // Setup All Power Domains
+  Setup_EMIF_CS2_NorFlash_16Bit( );   // Setup NOR Flash
+  init_pinmux();
+  init_gpio();
+  EVM6424_GPIO_setDir(100, 0); //set GPIO100 as output
+  while(1)
+  {
+
+    EVM6424_GPIO_setOutput(100, 0);
+    for(i=0;i<65500;i++);
+    EVM6424_GPIO_setOutput(100, 1);
+    for(i=0;i<65500;i++);
+  }
+  }
+/*----------------------------  */
 
   //init CPU, use GEL config
   initDSP();

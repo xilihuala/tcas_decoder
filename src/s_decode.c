@@ -519,7 +519,8 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
 	{
       gDoCRCCheck = TRY_CRC;
 	  gDoLowConfCheck = 1;
-      addr = (state_ptr[i]&0xff)<<16 | state_ptr[i+1]; //TODO: USE 4061-4062
+//      addr = (state_ptr[i]&0xff)<<16 | state_ptr[i+1]; //TODO: USE 4061-4062
+      addr = ((state_ptr[18]&0xff)<<16) | state_ptr[19];
 	}
 	else if(df_code == 0x4)
 	{

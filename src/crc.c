@@ -425,7 +425,8 @@ int errCheck(S_REPORT_T *report, unsigned long addr)
   unsigned long bitmap;
   int len;
   int bitlen;
-  unsigned char *buf, *tempbuf;
+  unsigned char *buf;
+  unsigned tempbuf[3];
 
   if(report->param0 & (1<<7))
     bitlen = 88; //long frame
@@ -436,18 +437,19 @@ int errCheck(S_REPORT_T *report, unsigned long addr)
   buf = report->frame;
 
   //xor address
-  if(addr)
-  {  
-    tempbuf[len] = buf[len] ^ ((addr>>16)&0xff);
-    tempbuf[len+1] = buf[len+1] ^ ((addr>>8)&0xff);
-    tempbuf[len+2] = buf[len+2] ^ (addr & 0xff);
-  }
+//  if(addr)
+//  {  
+    tempbuf[0] = (buf[len] ^ ((addr>>16)&0xff));
+    tempbuf[1] = (buf[len+1] ^ ((addr>>8)&0xff));
+    tempbuf[2] = (buf[len+2] ^ (addr & 0xff));
+//  }
+
   
   //cal crc24
   crc24 = crctablefast(buf,len);
   
   //get syndrome
-  err_syndrome = crc24 ^ ((tempbuf[len]<<16)|(tempbuf[len+1]<<8)|tempbuf[len+2]);
+  err_syndrome = crc24 ^ ((tempbuf[0]<<16)|(tempbuf[1]<<8)|tempbuf[2]);
   
   if (err_syndrome != 0) //try to correct error
   {

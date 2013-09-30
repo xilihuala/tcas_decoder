@@ -172,7 +172,7 @@ void construct_S_report(short *state_ptr)
   char pat;
   char at;
   char omni;
-  
+  char dlt_exist;  
   
   range = state_ptr[2]; //ST0[15:0]
   
@@ -187,8 +187,7 @@ void construct_S_report(short *state_ptr)
     
   if((bs_sum >=0) && (bs_sum <=3)) //use bs_sum and GT to get dlt direction   
   {
-    char dlt_exist;
-    dlt_exist = state_ptr[1]>>15;
+    dlt_exist = (state_ptr[1]>>15);
     if((dlt_exist == 0)||(gDltDirAvaliable == 0)) //no dlt chnl or dlt direction unavaliable
       bs_dlt = 0x7; //111b means no dlt chnl
     else
@@ -207,9 +206,9 @@ void construct_S_report(short *state_ptr)
         else
           bs_dlt = 0; //0
       }
-      omni = 0; //direct
-      t_b = UP_DIRECTION; //up
     } 
+    omni = 0; //direct
+    t_b = UP_DIRECTION; //up
   }
   else if((bs_sum == 4) || (bs_sum == 5)) //up or down all direction
   {  
@@ -412,10 +411,13 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     }
     else
     {  
-      gSumDirAvaliable = check_sum_ref_direction(&sum_data_ptr[offset]);
+//      gSumDirAvaliable = check_sum_ref_direction(&sum_data_ptr[offset]);
+      gSumDirAvaliable = check_sum_ref_direction(&dlt_data_ptr[offset]);
       if(!gSumDirAvaliable) //no valide sum frame, skip this frame, check next
         goto do_next;
-      gSumDir = (sum_data_ptr[offset]>>8)&0x7; //MONITOR BS
+//      gSumDir = (sum_data_ptr[offset]>>8)&0x7; //MONITOR BS  by fy
+//	    gSumDir = (state_ptr[i]>>8)&0x7;
+
       gDltDirAvaliable = 0;
     }  
     
@@ -725,16 +727,22 @@ int check_dlt_ref_direction(unsigned char *sample_dlt)
   char gt;
   int i;
   
-  gt = sample_dlt[0]>>15; //bit15: gt
+gt = sample_dlt[ref_idx[0]]>>7;	//sample_dlt[0]>>15; //bit15: gt  //by fy
   for(i=1;i<ref_cnt;i++)
   {
-    if(sample_dlt[i] >>15 != gt)
+    if(sample_dlt[ref_idx[i]] >>7 != gt)		//by fy
       break;
   }
   if(i == ref_cnt)
+  {
+		gGT = gt;				// by fy
     return 1;
+  }
   else
-    return 0;
+    {
+      gGT = gt;     //by fy
+      return 0;
+    }
 }
 
 
@@ -744,16 +752,22 @@ int check_sum_ref_direction(unsigned char *sample_sum)
   char sum_bs;
   int i;
 
-  sum_bs = (sample_sum[0]>>8)&0x7; //bit8-10: bs
+  sum_bs = (sample_sum[ref_idx[0]])&0x7; //bit8-10: bs				//by fy
   for(i=1;i<ref_cnt;i++)
   {
-    if(((sample_sum[i]>>8)&0x7) != sum_bs)
+    if(((sample_sum[ref_idx[i]])&0x7) != sum_bs)
       break;
   }
   if(i == ref_cnt)
+  {
+    gSumDir = (sample_sum[ref_idx[0]])&0x7;  		// by fy
     return 1;
+  }
   else
+  {
+  	gSumDir = (sample_sum[ref_idx[0]])&0x7;			// by fy
     return 0;
+  }
 }
 
 void get_ref_pulse(short *state)
@@ -1055,7 +1069,7 @@ int consistent_power_test(unsigned char *sample)
 1. in each chip'sturn 1;
   
   return 0;
-}
+}*/
 
 /*check first five data power level*/
 /*

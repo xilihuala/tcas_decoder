@@ -111,7 +111,7 @@ static S_REPORT_T gSFrameReport;
 
 static char gGT;
 static char gDltDirAvaliable;
-static char gSumDirAvaliable;
+//static char gSumDirAvaliable;
 static char gSumDir;
 static char gJit;
 
@@ -172,7 +172,7 @@ void construct_S_report(short *state_ptr)
   char pat;
   char at;
   char omni;
-  char dlt_exist;  
+  
   
   range = state_ptr[2]; //ST0[15:0]
   
@@ -182,12 +182,13 @@ void construct_S_report(short *state_ptr)
   	aq_bs = (state_ptr[0] >>8)&0x7;//ST2[10:8]
   else
     aq_bs = 0x7; // invalid direction
-
+  if(
   bs_sum = gSumDir;
     
   if((bs_sum >=0) && (bs_sum <=3)) //use bs_sum and GT to get dlt direction   
   {
-    dlt_exist = (state_ptr[1]>>15);
+    char dlt_exist;
+    dlt_exist = state_ptr[1]>>15;
     if((dlt_exist == 0)||(gDltDirAvaliable == 0)) //no dlt chnl or dlt direction unavaliable
       bs_dlt = 0x7; //111b means no dlt chnl
     else
@@ -202,7 +203,7 @@ void construct_S_report(short *state_ptr)
       else if((bs_sum == 2) || (bs_sum == 3)) //bs_sum is 90 or 270
       {  
         if(gGT == 0)
-		  bs_dlt = 1; //180
+		  		bs_dlt = 1; //180
         else
           bs_dlt = 0; //0
       }
@@ -401,26 +402,6 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     if(ref_cnt == 0) //no reference pulse
       goto do_next;
     
-    //check ref pulse direction avaliable
-    mode = state_ptr[i] & 0x7; //ST1[2:0]
-    if(mode == ACQUIRE_MODE) //0x1
-    {  
-      gSumDirAvaliable = 1;
-      gSumDir = (state_ptr[i]>>8)&0x7; //AQUIRY BS
-      gDltDirAvaliable = check_dlt_ref_direction(&dlt_data_ptr[offset]);
-    }
-    else
-    {  
-//      gSumDirAvaliable = check_sum_ref_direction(&sum_data_ptr[offset]);
-      gSumDirAvaliable = check_sum_ref_direction(&dlt_data_ptr[offset]);
-      if(!gSumDirAvaliable) //no valide sum frame, skip this frame, check next
-        goto do_next;
-//      gSumDir = (sum_data_ptr[offset]>>8)&0x7; //MONITOR BS  by fy
-//	    gSumDir = (state_ptr[i]>>8)&0x7;
-
-      gDltDirAvaliable = 0;
-    }  
-    
     //calculate reference power level
     //cal_refer_level(&sum_data_ptr[offset], &dlt_data_ptr[offset]);
     cal_refer_level(&sum_data_ptr[offset-gJit], &dlt_data_ptr[offset-gJit]);	//by fy
@@ -461,8 +442,8 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     if( (state_idx == -1) 
     	||((ref_level - cur_level_sum) > 3*VALUE_DB1))
     {
-	  if (cnt>1)
-		gSReTrigerCnt++;
+	  	if (cnt>1)
+				gSReTrigerCnt++;
       cur_level_sum = ref_level;
       cur_level_dlt = ref_level_dlt;
       data_idx = offset;
@@ -479,6 +460,27 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
     return -1;
   }
   
+  mode = state_ptr[state_idx] & 0x7;
+  
+  //check ref pulse direction avaliable
+  if(mode == ACQUIRE_MODE) //0x1
+  {  
+  //gSumDirAvaliable = 1;
+    gSumDir = (state_ptr[state_idx]>>8)&0x7; //AQUIRY BS
+    gDltDirAvaliable = check_dlt_ref_direction(&dlt_data_ptr[data_idx]);
+  }
+  else
+  { 
+  	char sum_bs; 
+    sum_bs = check_sum_ref_direction(&sum_data_ptr[data_idx]);
+    if(sum_bs == 0) //no valide sum frame, skip this frame, check next
+    	gSumDir = 0x7;
+    //	goto do_next;  //todo: power or direction?
+    else
+      gSumDir = sum_bs;
+    gDltDirAvaliable = 0;
+  }  
+  
   /*
     now , we have determin which frame is choosed to do follow check.
     note :at this time , we only check one frame, more frames need do more loop
@@ -494,7 +496,6 @@ int do_frame_check(int pool_id, unsigned long sample_bit_len)
   multi_sample_baseline(&sum_data_ptr[data_idx], cur_level_sum, sample_bit_len/S_SAMPLE_FREQ);
    
   /*NOTE: in DF17 and DF11, error protect is PI , not AP, PI always zero in DF17, DF11 , so do nothing*/  
-  mode = state_ptr[state_idx] & 0x7;
   df_code =  gSFrameReport.frame[0] >> 3; 
   
   gDoLowConfCheck = 0;
@@ -727,22 +728,17 @@ int check_dlt_ref_direction(unsigned char *sample_dlt)
   char gt;
   int i;
   
-gt = sample_dlt[ref_idx[0]]>>7;	//sample_dlt[0]>>15; //bit15: gt  //by fy
+  gt = sample_dlt[ref_idx[0]]>>7;	//sample_dlt[0]>>15; //bit15: gt
   for(i=1;i<ref_cnt;i++)
   {
-    if(sample_dlt[ref_idx[i]] >>7 != gt)		//by fy
+    if(sample_dlt[ref_idx[i]] >>7 != gt) //wj : all reference sample data must have the same GT
       break;
   }
+  gGT = gt;
   if(i == ref_cnt)
-  {
-		gGT = gt;				// by fy
     return 1;
-  }
   else
-    {
-      gGT = gt;     //by fy
-      return 0;
-    }
+    return 0;
 }
 
 
@@ -752,22 +748,16 @@ int check_sum_ref_direction(unsigned char *sample_sum)
   char sum_bs;
   int i;
 
-  sum_bs = (sample_sum[ref_idx[0]])&0x7; //bit8-10: bs				//by fy
+  sum_bs = sample_sum[ref_idx[0]&0x7; //bit8-10: bs
   for(i=1;i<ref_cnt;i++)
   {
-    if(((sample_sum[ref_idx[i]])&0x7) != sum_bs)
+    if((sample_sum[ref_idx[i]&0x7) != sum_bs)
       break;
   }
   if(i == ref_cnt)
-  {
-    gSumDir = (sample_sum[ref_idx[0]])&0x7;  		// by fy
-    return 1;
-  }
+    return sum_bs;
   else
-  {
-  	gSumDir = (sample_sum[ref_idx[0]])&0x7;			// by fy
     return 0;
-  }
 }
 
 void get_ref_pulse(short *state)

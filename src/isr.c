@@ -307,8 +307,8 @@ interrupt void c_buffer2_ready_isr()
 #endif
    
   //check whether receive buffer is full
-  wptr = cdata_wptr[0];
-  state_ptr = &cdataSt[0][wptr][0];
+  wptr = cdata_wptr[1];  //wj 20150509
+  state_ptr = &cdataSt[1][wptr][0]; //wj 20150509
   if(state_ptr[C_DATA_LEN_POS]) //sample data buffer full
   {
     g_c_sample_full[1] = 1;

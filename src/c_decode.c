@@ -244,7 +244,7 @@ void c_decode(int pool_id)
         f2_next_value = data[17];    
         f2_next_gt = (data[1] >> 1) &0x1;    
         
-        if(f1_next_range <= f2_range)
+        if(f1_next_range <= (f2_range+2))		//by fy
         {
           //check f2 overlap
           if(f2_range < f2_next_range)
@@ -289,7 +289,7 @@ void c_decode(int pool_id)
         data = &data_ptr[j*ONE_C_FRAME_SIZE];
         f1_next_range = data[0];
         f2_next_range = f1_next_range + 406; 
-        if(f1_next_range <= f2_range)
+        if(f1_next_range <= (f2_range+2))   //by fy
         {
           //set F1 overlap flag
           v = (f2_range - f1_next_range)%29;
@@ -520,8 +520,8 @@ void c_decode(int pool_id)
   }
   
   //send END frame
-  send_END_to_CPU(mode); //use last frame's mode
-  gCReportCnt++;
+  //  send_END_to_CPU(mode); //use last frame's mode
+  //  gCReportCnt++;
     
 _c_do_next:
   //release this state buffer

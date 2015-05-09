@@ -2,7 +2,7 @@
 
 REPORT_T gFrameReport[FPGA_POOL_NUM];
 REPORT_T gFrameEnd;
-
+//static int report_pool_id = 0;		// by fy
 event_desc_t eventList[]={
   {4, GPIO0_EVENT},                   //S buffer1 ready interrupt
   {5, GPIO1_EVENT},                   //S buffer2 ready interrupt
@@ -51,7 +51,7 @@ void report_to_CPU(unsigned char *report)
   {
     volatile char state;
   
-  	state = (*(volatile unsigned char*)FPGA_REPORT_STATE)&0x1;
+  	state = (*(volatile unsigned char*)FPGA_REPORT_STATE)&0x1; 
   	if((state & (1<< report_pool_id)) == 0)
   	  break;
   }
@@ -68,6 +68,10 @@ void report_to_CPU(unsigned char *report)
 /*send END frame to CPU*/
 void send_END_to_CPU(char mode)
 {
+  if (mode==1)
+	gFrameEnd.data[0] = 0xfffe;
+  else
+	gFrameEnd.data[0] = 0xffff;	
   gFrameEnd.data[1] |= (mode & 0x7)<<13;
   report_to_CPU((unsigned char*)&gFrameEnd);
 }

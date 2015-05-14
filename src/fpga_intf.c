@@ -51,7 +51,7 @@ void report_to_CPU(unsigned char *report)
   {
     volatile char state;
   
-  	state = (*(volatile unsigned char*)FPGA_REPORT_STATE)&0x1; 
+  	state = (*(volatile unsigned char*)FPGA_REPORT_STATE)&0x3; 
   	if((state & (1<< report_pool_id)) == 0)
   	  break;
   }

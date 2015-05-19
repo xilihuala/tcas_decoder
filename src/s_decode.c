@@ -688,6 +688,8 @@ void s_decode(int pool_id)
     //  }
   }
   //}
+    else
+       idx = -1;
 #else
 //  idx = do_frame_check(pool_id, LONG_FRAME_LEN*S_SAMPLE_FREQ);
 	idx = do_frame_check(pool_id, SHORT_FRAME_LEN*S_SAMPLE_FREQ);

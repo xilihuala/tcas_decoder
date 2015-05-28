@@ -202,7 +202,9 @@ void c_decode(int pool_id)
   
   if(frame_cnt > MAX_CNT_IN_ONE_CSTEP)
   	goto _c_do_next;
-   
+  
+  //todo: maybe do some mode filter
+  
   /*****************************/
   /* PROCESS FRAMES IN ONE STEP*/
   /*****************************/

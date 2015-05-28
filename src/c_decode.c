@@ -199,6 +199,9 @@ void c_decode(int pool_id)
   v_cnt = 0;
   memset(spi_flag, 0, MAX_CNT_IN_ONE_CSTEP);
   memset(overlap, 0, MAX_CNT_IN_ONE_CSTEP);
+  
+  if(frame_cnt > MAX_CNT_IN_ONE_CSTEP)
+  	goto _c_do_next;
    
   /*****************************/
   /* PROCESS FRAMES IN ONE STEP*/
@@ -227,15 +230,12 @@ void c_decode(int pool_id)
     f2_gt = (data[1] >> 1) &0x1;
     check_ok = 1;
     f1_overlap = overlap[i];
+    j = i+1;   
     if(f1_overlap)
     {
       ref = 1; //use F2 as ref
       
       //check whether F2 is overlapped
-      j = i+1;   
-      if(j > frame_cnt)
-        break;
-      
       for(;j<frame_cnt;j++)
       {
         data = &data_ptr[j*ONE_C_FRAME_SIZE];
@@ -272,7 +272,7 @@ void c_decode(int pool_id)
             }
           }
           
-		  //set F1 overlap flag
+		      //set F1 overlap flag
           v = (f2_range - f1_next_range)%29;
           if((v<=2) || (v>=27)) //overlap on next F1
           	overlap[j] = 1;
@@ -282,9 +282,8 @@ void c_decode(int pool_id)
       } //for
     } //if
     else
-	{
-	  j = i+1; 
-	  for(;j<frame_cnt;j++)
+	  {
+	    for(;j<frame_cnt;j++)
       {
         data = &data_ptr[j*ONE_C_FRAME_SIZE];
         f1_next_range = data[0];
@@ -295,11 +294,11 @@ void c_decode(int pool_id)
           v = (f2_range - f1_next_range)%29;
           if((v<=2) || (v>=27)) //overlap on next F1
           	overlap[j] = 1;
-		}
-		else
-		  break;
+		    }
+		    else
+		      break;
+	    }
 	  }
-	}
     if(check_ok == 0)
     	continue;
     	
@@ -372,7 +371,7 @@ void c_decode(int pool_id)
     dlt_ref = cframe[i].dlt_ref_value;
     ref_oba = cframe[i].ref_oba;
     mode = data[2]>>13;
-	f1_gt = (data[1] >> 14) & 0x1;
+	  f1_gt = (data[1] >> 14) & 0x1;
     f2_gt = (data[1] >> 1) &0x1;
     conf = 0; 
     bit_value =0;

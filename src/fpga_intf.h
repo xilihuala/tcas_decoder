@@ -66,7 +66,7 @@
 
 #define C_DATA_LEN_POS          0  //unit of length is short
 
-#define C_STATE_BUF_SIZE        1*2 /*short*/
+#define C_STATE_BUF_SIZE        1 /*short*/
 
 #define ONE_C_FRAME_SIZE         18 /*short*/
 #define MAX_CNT_IN_ONE_CSTEP     60 //todo
